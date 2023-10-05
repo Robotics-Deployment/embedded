@@ -1,0 +1,11 @@
+services:
+  rdembedded:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    network_mode: host
+    image: robotics-deployment:embedded
+    container_name: rdembedded
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["bash"]
