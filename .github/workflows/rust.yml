@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  docker:
+  compile:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,11 +19,18 @@ jobs:
     - name: Start containers
       run: docker-compose -f "docker-compose.yml" up -d --build
 
-    - name: Build
+    - name: Build x86_64
       run: docker exec rdembedded cargo build --release --target x86_64-unknown-linux-gnu
 
-    - name: Build
+    - name: Build Aarch64
       run: docker exec rdembedded cargo build --release --target aarch64-unknown-linux-gnu
 
     - name: Stop Docker Compose services
       run: docker-compose -f docker-compose.yml down
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: rdembedded
+        path: |
+          rdembedded/target/x86_64-unknown-linux-gnu/release/rdembedded
+          rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded
