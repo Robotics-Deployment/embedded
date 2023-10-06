@@ -12,15 +12,18 @@ env:
 jobs:
   docker:
     runs-on: ubuntu-latest
-      
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Start containers
       run: docker-compose -f "docker-compose.yml" up -d --build
-      
+
     - name: Build
-      run: docker exec rdembedded cargo build --verbose --release
+      run: docker exec rdembedded cargo build --release --target x86_64-unknown-linux-gnu
+
+    - name: Build
+      run: docker exec rdembedded cargo build --release --target aarch64-unknown-linux-gnu
 
     - name: Stop Docker Compose services
-      run: docker-compose -f docker-compose.yaml down
+      run: docker-compose -f docker-compose.yml down
