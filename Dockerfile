@@ -16,12 +16,14 @@ RUN apt-get update && \
     gdb  \
     pkg-config  \
     git  \
+    ca-certificates  \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get autoremove -y \
     && apt-get clean
 
 # Install Rust and Cargo
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl https://sh.rustup.rs -sSf | \
+        sh -s -- --default-toolchain stable -y
 
 # Add Cargo's bin directory to PATH
 ENV PATH="/root/.cargo/bin:${PATH}"
