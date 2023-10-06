@@ -2,7 +2,7 @@
 
 ---
 
-[![Rust](https://github.com/Robotics-Deployment/embedded/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/Robotics-Deployment/embedded/actions/workflows/rust.yml)
+[![Build](https://github.com/Robotics-Deployment/embedded/actions/workflows/build.yml/badge.svg)](https://github.com/Robotics-Deployment/embedded/actions/workflows/build.yml)
 
 The embedded code that runs on nodes.
 
