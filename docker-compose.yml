@@ -8,4 +8,6 @@ services:
     container_name: rdembedded
     environment:
       - PYTHONUNBUFFERED=1
+    volumes:
+      ./rdembedded:/opt/rdembedded
     command: ["bash"]

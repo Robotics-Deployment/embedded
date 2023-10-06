@@ -27,7 +27,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Copy your asd directory into the image
-COPY asd /opt/rdembedded
+COPY rdembedded /opt/rdembedded
 
 # Set the working directory
 WORKDIR /opt/rdembedded
