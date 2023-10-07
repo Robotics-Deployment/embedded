@@ -15,12 +15,13 @@ mod config;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let mut interval = interval(Duration::from_secs(1));
     if !getuid().is_root() {
         println!("This program must be run as root.");
+        interval.tick().await;
         exit(1);
     }
 
-    let mut interval = interval(Duration::from_secs(1));
     let device_config: config::DeviceConfig;
     let wg_config: wg::WgConfig;
     let socket: Option<UdpSocket>;

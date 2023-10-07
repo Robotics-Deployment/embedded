@@ -3,8 +3,6 @@ name: Build
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,14 +14,23 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+      name: enable qemu
+      run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
     - name: Start containers
       run: docker-compose -f "docker-compose.yml" up -d --build
 
-    - name: Build x86_64
-      run: docker exec rdembedded cargo build --release --target x86_64-unknown-linux-gnu
+    - name: Build amd64
+      run: docker exec rdembedded-amd64 cargo build --release --target x86_64-unknown-linux-gnu
 
-    - name: Build Aarch64
-      run: docker exec rdembedded cargo build --release --target aarch64-unknown-linux-gnu
+    - name: Strip amd64
+      run: docker exec rdembedded-amd64 x86_64-linux-gnu-strip target/x86_64-unknown-linux-gnu/release/rdembedded
+
+    - name: Build arm64
+      run: docker exec rdembedded-arm64 cargo build --release --target aarch64-unknown-linux-gnu
+
+    - name: Strip arm64
+      run: docker exec rdembedded-arm64 aarch64-linux-gnu-strip target/aarch64-unknown-linux-gnu/release/rdembedded
 
     - name: Stop Docker Compose services
       run: docker-compose -f docker-compose.yml down
@@ -32,5 +39,5 @@ jobs:
       with:
         name: rdembedded
         path: |
-          rdembedded/target/x86_64-unknown-linux-gnu/release/rdembedded
+          rdembedded/target/amd64-unknown-linux-gnu/release/rdembedded
           rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded
