@@ -1,23 +1,12 @@
 services:
-  rdembedded-amd64:
+  rdembedded:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         - IMAGE=rust:latest
-    image: robotics-deployment:embedded-amd64
-    container_name: rdembedded-amd64
-    volumes:
-      - ./rdembedded:/opt/rdembedded
-    command: ["sleep", "infinity"]
-  rdembedded-arm64:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        - IMAGE=arm64v8/rust:latest
-    image: robotics-deployment:embedded-arm64
-    container_name: rdembedded-arm64
+    image: robotics-deployment:embedded
+    container_name: rdembedded
     volumes:
       - ./rdembedded:/opt/rdembedded
     command: ["sleep", "infinity"]

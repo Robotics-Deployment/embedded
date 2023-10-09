@@ -14,23 +14,20 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: enable qemu
-      run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-
     - name: Start containers
       run: docker-compose -f "docker-compose.yml" up -d --build
 
     - name: Build amd64
-      run: docker exec rdembedded-amd64 cargo build --release --target x86_64-unknown-linux-gnu
+      run: docker exec rdembedded cargo build --release --target x86_64-unknown-linux-gnu
 
     - name: Strip amd64
-      run: docker exec rdembedded-amd64 x86_64-linux-gnu-strip target/x86_64-unknown-linux-gnu/release/rdembedded
+      run: docker exec rdembedded x86_64-linux-gnu-strip target/x86_64-unknown-linux-gnu/release/rdembedded
 
     - name: Build arm64
-      run: docker exec rdembedded-arm64 cargo build --release --target aarch64-unknown-linux-gnu
+      run: docker exec rdembedded cargo build --release --target aarch64-unknown-linux-gnu
 
     - name: Strip arm64
-      run: docker exec rdembedded-arm64 aarch64-linux-gnu-strip target/aarch64-unknown-linux-gnu/release/rdembedded
+      run: docker exec rdembedded aarch64-linux-gnu-strip target/aarch64-unknown-linux-gnu/release/rdembedded
 
     - name: Stop Docker Compose services
       run: docker-compose -f docker-compose.yml down

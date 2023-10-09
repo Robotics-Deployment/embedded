@@ -1,0 +1,15 @@
+# Ignore the target directory which contains build outputs
+**/target/
+**/Cargo.lock
+
+# Ignore .git directory
+.git/
+
+# Ignore .gitignore file
+.gitignore
+
+# Ignore any temporary files
+*.swp
+*.bak
+*.tmp
+*~
