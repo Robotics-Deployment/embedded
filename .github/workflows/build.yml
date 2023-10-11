@@ -43,3 +43,12 @@ jobs:
         name: rdembedded-aarch64
         path: |
           rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
+
+    - name: Release
+      uses: softprops/gh-release@v1
+      with:
+        files: rdembedded/target/*/release/rdembedded-*
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag_name: ${{ github.sha }}
+        name: Release ${{ github.sha }}
+        body: Automated release of ${{ github.sha }}
