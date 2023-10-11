@@ -14,9 +14,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    # Build environment
     - name: Start containers
       run: docker-compose -f "docker-compose.yml" up -d --build
 
+    # Compile and strip binaries
     - name: Build amd64
       run: docker exec rdembedded cargo build --release --bin rdembedded-amd64 --target x86_64-unknown-linux-gnu
 
@@ -29,9 +31,11 @@ jobs:
     - name: Strip arm64
       run: docker exec rdembedded aarch64-linux-gnu-strip target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
 
+    # Cleanup environment
     - name: Stop Docker Compose services
       run: docker-compose -f docker-compose.yml down
 
+    # Upload artifacts
     - uses: actions/upload-artifact@v3
       with:
         name: rdembedded-amd64
@@ -44,11 +48,23 @@ jobs:
         path: |
           rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
 
-    - name: Release
+    # Create GitHub Release
+    - name: Generate Tag Name
+      id: generate_tag
+      run: echo "::set-output name=tag_name::v$(date +'%Y%m%d%H%M%S')"
+
+    - name: Create Git Tag
+      run: git tag ${{ steps.generate_tag.outputs.tag_name }}
+
+    - name: Push Git Tag
+      run: git push origin ${{ steps.generate_tag.outputs.tag_name }}
+
+    # Release And Upload Binaries
+    - name: Create GitHub Release and Upload Binaries
       uses: softprops/action-gh-release@v0.1.15
       with:
-        files: rdembedded/target/*/release/rdembedded-*
+        files: ./rdembedded/target/*/release/rdembedded-*
         token: ${{ secrets.GITHUB_TOKEN }}
-        tag_name: ${{ github.sha }}
-        name: Release ${{ github.sha }}
+        tag_name: ${{ steps.generate_tag.outputs.tag_name }}
+        name: Release ${{ steps.generate_tag.outputs.tag_name }}
         body: Automated release of ${{ github.sha }}
