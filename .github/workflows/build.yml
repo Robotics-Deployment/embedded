@@ -36,5 +36,5 @@ jobs:
       with:
         name: rdembedded
         path: |
-          target/x86_64-unknown-linux-gnu/release/rdembedded-amd64
-          target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
+          rdembedded/target/x86_64-unknown-linux-gnu/release/rdembedded-amd64
+          rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
