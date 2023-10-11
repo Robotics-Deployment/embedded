@@ -12,3 +12,11 @@ tokio = {version = "1.32" , features = ["full"]}
 anyhow = "1.0"
 uuid = {version = "1.4", features = ["v7"]}
 nix = {version = "0.27", features = ["user"]}
+
+[[bin]]
+name = "rdembedded-amd64"
+path = "src/main.rs"
+
+[[bin]]
+name = "rdembedded-aarch64"
+path = "src/main.rs"
