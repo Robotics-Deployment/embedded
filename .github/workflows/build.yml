@@ -20,14 +20,28 @@ jobs:
 
     # Compile and strip binaries
     - name: Build x86_64
-      run: docker exec rdembedded cargo build --release --bin rdembedded-x86_64 --target x86_64-unknown-linux-gnu
+      run: docker exec rdembedded cargo build --release --target x86_64-unknown-linux-gnu
 
     - name: Build arm64
-      run: docker exec rdembedded cargo build --release --bin rdembedded-aarch64 --target aarch64-unknown-linux-gnu
+      run: docker exec rdembedded cargo build --release --target aarch64-unknown-linux-gnu
+
+    # Strip binaries
+    - name: Strip x86_64
+      run: docker exec rdembedded x86_64-linux-gnu-strip rdembedded/target/x86_64-unknown-linux-gnu/release/rdembedded
+
+    - name: Strip aarch64
+      run: docker exec rdembedded aarch64-linux-gnu-strip rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded
 
     # Cleanup environment
     - name: Stop Docker Compose services
       run: docker-compose -f docker-compose.yml down
+
+    # Rename binaries
+    - name: Rename x86_64 release binaries
+      run: mv rdembedded/target/x86_64-unknown-linux-gnu/release/rdembedded rdembedded/target/x86_64-unknown-linux-gnu/release/rdembedded-x86_64
+
+    - name: Rename aarch64 release binaries
+      run: mv rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
 
     # Upload artifacts
     - uses: actions/upload-artifact@v3
@@ -58,7 +72,7 @@ jobs:
       uses: softprops/action-gh-release@v0.1.15
       with:
         files: |
-          ./rdembedded/target/*/release/rdembedded-*
+          ./rdembedded/target/*/release/rdembedded
           ./LICENSE
         token: ${{ secrets.GITHUB_TOKEN }}
         tag_name: ${{ steps.generate_tag.outputs.tag_name }}
