@@ -2,8 +2,10 @@
 name = "rdembedded"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Embedded robotics deployment tool"
+homepage = "https://roboticsdeployment.com/"
+repository = "https://github.com/Robotics-Deployment/embedded.git"
+license = "Apache-2.0"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
