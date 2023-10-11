@@ -3,8 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - IMAGE=rust:latest
     image: robotics-deployment:embedded
     container_name: rdembedded
     volumes:

@@ -1,6 +1,4 @@
-ARG IMAGE=rust:latest
-
-FROM ${IMAGE}
+FROM rust:latest
 
 ARG DEBIAN_FRONTEND=noninteractive
 
