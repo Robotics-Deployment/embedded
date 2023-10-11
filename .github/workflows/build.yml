@@ -34,7 +34,12 @@ jobs:
 
     - uses: actions/upload-artifact@v3
       with:
-        name: rdembedded
+        name: rdembedded-amd64
         path: |
           rdembedded/target/x86_64-unknown-linux-gnu/release/rdembedded-amd64
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: rdembedded-aarch64
+        path: |
           rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
