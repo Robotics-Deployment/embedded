@@ -33,11 +33,11 @@ jobs:
       run: docker exec rdembedded aarch64-linux-gnu-strip target/aarch64-unknown-linux-gnu/release/rdembedded
 
       # Rename binaries
-    - name: Rename x86_64 release binaries
-      run: mv target/x86_64-unknown-linux-gnu/release/rdembedded target/x86_64-unknown-linux-gnu/release/rdembedded-x86_64
+    - name: Rename x86_64
+      run: docker exec rdembedded mv target/x86_64-unknown-linux-gnu/release/rdembedded target/x86_64-unknown-linux-gnu/release/rdembedded-x86_64
 
-    - name: Rename aarch64 release binaries
-      run: mv target/aarch64-unknown-linux-gnu/release/rdembedded target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
+    - name: Rename aarch64
+      run: docker exec rdembedded mv target/aarch64-unknown-linux-gnu/release/rdembedded target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
 
     # Cleanup environment
     - name: Stop Docker Compose services
