@@ -53,6 +53,7 @@ async fn main() -> anyhow::Result<()> {
         interval.tick().await;
     }
 
+    // Status Output
     println!("Using UUID: {}", device_config.get_uuid());
     println!("Using network interface: {}", device_config.get_interface());
     println!("Using Device IP: {}", wg_config.get_device_ip());

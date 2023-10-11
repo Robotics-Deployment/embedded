@@ -22,14 +22,8 @@ jobs:
     - name: Build x86_64
       run: docker exec rdembedded cargo build --release --bin rdembedded-x86_64 --target x86_64-unknown-linux-gnu
 
-    - name: Strip x86_64
-      run: docker exec rdembedded x86_64-linux-gnu-strip target/x86_64-unknown-linux-gnu/release/rdembedded-x86_64
-
     - name: Build arm64
       run: docker exec rdembedded cargo build --release --bin rdembedded-aarch64 --target aarch64-unknown-linux-gnu
-
-    - name: Strip arm64
-      run: docker exec rdembedded aarch64-linux-gnu-strip target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
 
     # Cleanup environment
     - name: Stop Docker Compose services
