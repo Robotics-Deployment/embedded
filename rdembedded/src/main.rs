@@ -58,25 +58,25 @@ async fn main() -> anyhow::Result<()> {
     println!("Using network interface: {}", device_config.get_interface());
     println!("Using Device IP: {}", wg_config.get_device_ip());
     println!("Using Hub IP: {}", wg_config.get_hub_ip());
+    println!("Using Hub Port: {}", wg_config.get_hub_port());
 
     // Network Setup
-    let port = 1337;
     let uuid: Uuid = Uuid::parse_str(device_config.get_uuid()).expect("Unable to parse UUID");
 
     // Socket Setup
-    println!("Creating UDP socket {}:{}", wg_config.get_device_ip(), port);
+    println!("Creating UDP socket {}:{}", wg_config.get_device_ip(), wg_config.get_hub_port());
     loop {
-        let r = UdpSocket::bind(format!("{}:{}", wg_config.get_device_ip(), port)).await;
+        let r = UdpSocket::bind(format!("{}:{}", wg_config.get_device_ip(), wg_config.get_hub_port())).await;
         if r.is_ok() {
             socket = Some(r.unwrap());
-            println!("Bound socket to {}:{}", wg_config.get_device_ip(), port);
+            println!("Bound socket to {}:{}", wg_config.get_device_ip(), wg_config.get_hub_port());
             break;
         }
         println!("Unable to bind socket, retrying in 1 second");
         interval.tick().await;
     }
 
-    println!("Sending heartbeat packet to {}:{}", wg_config.get_hub_ip(), port);
+    println!("Sending heartbeat packet to {}:{}", wg_config.get_hub_ip(), wg_config.get_hub_port());
 
     // Main
     let mut once = true;
@@ -87,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
             .send_to(uuid.as_bytes(),
                      format!("{}:{}",
                              wg_config.get_hub_ip(),
-                             port))
+                             wg_config.get_hub_port()))
             .await;
 
         if r.is_err() {

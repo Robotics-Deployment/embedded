@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WgConfig {
     hub_ip: String,
+    hub_port: u16,
     device_ip: String,
 }
 
@@ -14,9 +15,7 @@ impl WgConfig {
     pub fn get_hub_ip(&self) -> &str {
         &self.hub_ip
     }
-}
-
-impl WgConfig {
+    pub fn get_hub_port(&self) -> u16 { self.hub_port }
     pub fn get_device_ip(&self) -> &str {
         &self.device_ip
     }
@@ -29,6 +28,8 @@ pub fn get_config(wg_file: &PathBuf) -> Result<WgConfig> {
 
     let hub_ip = scan(&mut reader, "[Peer]", "AllowedIPs")
         .context("Failed to scan for hub IP in wireguard config")?;
+    let hub_port = scan(&mut reader, "[Peer]", "Endpoint")
+        .context("Failed to scan for hub port in wireguard config")?;
     let device_ip = scan(&mut reader, "[Interface]", "Address")
         .context("Failed to scan for device IP in wireguard config")?;
 
@@ -38,6 +39,10 @@ pub fn get_config(wg_file: &PathBuf) -> Result<WgConfig> {
             .next()
             .ok_or_else(|| anyhow::anyhow!("Invalid hub IP format"))?
             .to_string(),
+        hub_port: hub_port
+            .split(":")
+            .nth(1)
+            .ok_or_else(|| anyhow::anyhow!("Invalid hub port format"))?.parse::<u16>()?,
         device_ip: device_ip
             .split("/")
             .next()
