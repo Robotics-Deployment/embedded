@@ -18,10 +18,10 @@ async fn main() -> anyhow::Result<()> {
     let wg_config: wg::WgConfig;
     let socket: Option<UdpSocket>;
     let device_config: config::DeviceConfig;
+    let mut interval = interval(Duration::from_secs(1));
 
     // Memory Scope
     {
-        let mut interval = interval(Duration::from_secs(1));
         if !getuid().is_root() {
             println!("This program must be run as root.");
             interval.tick().await;
