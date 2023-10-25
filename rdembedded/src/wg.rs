@@ -36,7 +36,7 @@ pub fn get_config(wg_file: &PathBuf) -> Result<WgConfig> {
     let wg_config = WgConfig {
         hub_ip: hub_ip
             .split("/")
-            .next()
+            .nth(0)
             .ok_or_else(|| anyhow::anyhow!("Invalid hub IP format"))?
             .to_string(),
         hub_port: hub_port
@@ -45,7 +45,7 @@ pub fn get_config(wg_file: &PathBuf) -> Result<WgConfig> {
             .ok_or_else(|| anyhow::anyhow!("Invalid hub port format"))?.parse::<u16>()?,
         device_ip: device_ip
             .split("/")
-            .next()
+            .nth(0)
             .ok_or_else(|| anyhow::anyhow!("Invalid device IP format"))?
             .to_string(),
     };
@@ -64,9 +64,9 @@ fn scan(reader: &mut BufReader<File>, device: &str, field: &str) -> Result<Strin
             if line.starts_with(field) {
                 let parts: Vec<&str> = line.split_whitespace().collect();
                 if parts.len() > 2 {
-                    let ip_address: Vec<&str> = parts[2].split(":").collect();
+                    let ip_address: &str = parts[2];
                     if !ip_address.is_empty() {
-                        field_value = ip_address[0].to_string();
+                        field_value = ip_address.to_string();
                         break;
                     }
                 }
