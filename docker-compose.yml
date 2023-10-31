@@ -4,7 +4,17 @@ services:
       context: .
       dockerfile: Dockerfile
     image: robotics-deployment:embedded
+    privileged: true
     container_name: rdembedded
+    environment:
+      - DISPLAY=${DISPLAY}
     volumes:
       - ./rdembedded:/opt/rdembedded
+      - ~/.config/lvim:/root/.config/lvim
+      - ~/.config/github-copilot:/root/.config/github-copilot
+      - ~/.local/state/lvim:/root/.local/state/lvim
+      - ~/.local/share/lvim:/root/.local/share/lvim
+      - ~/.local/share/lunarvim:/root/.local/share/lunarvim
+      - /tmp/.X11-unix:/tmp/.X11-unix
     command: ["sleep", "infinity"]
+
