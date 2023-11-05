@@ -41,20 +41,20 @@ jobs:
 
     # Cleanup environment
     - name: Stop Docker Compose services
-      run: docker-compose -f docker-compose.yml down
+      run: docker-compose -f "build.yaml" down
 
     # Upload artifacts
     - uses: actions/upload-artifact@v3
       with:
         name: rdembedded-x86_64
         path: |
-          rdembedded/target/x86_64-unknown-linux-gnu/release/rdembedded-x86_64
+          target/x86_64-unknown-linux-gnu/release/rdembedded-x86_64
 
     - uses: actions/upload-artifact@v3
       with:
         name: rdembedded-aarch64
         path: |
-          rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
+          target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
 
     # Create GitHub Release
     - name: Generate Tag Name
@@ -72,8 +72,8 @@ jobs:
       uses: softprops/action-gh-release@v0.1.15
       with:
         files: |
-          ./rdembedded/target/x86_64-unknown-linux-gnu/release/rdembedded-x86_64
-          ./rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
+          ./target/x86_64-unknown-linux-gnu/release/rdembedded-x86_64
+          ./target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
           ./LICENSE
         token: ${{ secrets.GITHUB_TOKEN }}
         tag_name: ${{ steps.generate_tag.outputs.tag_name }}
