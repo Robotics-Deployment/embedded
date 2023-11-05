@@ -72,7 +72,8 @@ jobs:
       uses: softprops/action-gh-release@v0.1.15
       with:
         files: |
-          ./rdembedded/target/*/release/rdembedded
+          ./rdembedded/target/*/release/rdembedded-x86_64
+          ./rdembedded/target/*/release/rdembedded-aarch64
           ./LICENSE
         token: ${{ secrets.GITHUB_TOKEN }}
         tag_name: ${{ steps.generate_tag.outputs.tag_name }}
