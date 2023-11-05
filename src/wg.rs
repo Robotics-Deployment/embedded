@@ -1,23 +1,38 @@
-use std::fs::File;
-use anyhow::{Result, Context};
-use std::io::{BufReader, Seek, SeekFrom, BufRead};
-use std::path::PathBuf;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::{BufRead, BufReader, Seek, SeekFrom};
+use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WgConfig {
     hub_ip: String,
     hub_port: u16,
     device_ip: String,
+    file: PathBuf,
 }
 
 impl WgConfig {
+    pub fn default() -> WgConfig {
+        WgConfig {
+            hub_ip: String::from(""),
+            hub_port: 0,
+            device_ip: String::from(""),
+            file: PathBuf::from("/etc/wireguard/rd0.conf"),
+        }
+    }
+
     pub fn get_hub_ip(&self) -> &str {
         &self.hub_ip
     }
-    pub fn get_hub_port(&self) -> u16 { self.hub_port }
+    pub fn get_hub_port(&self) -> u16 {
+        self.hub_port
+    }
     pub fn get_device_ip(&self) -> &str {
         &self.device_ip
+    }
+    pub fn get_file(&self) -> &PathBuf {
+        &self.file
     }
 }
 
@@ -42,12 +57,14 @@ pub fn get_config(wg_file: &PathBuf) -> Result<WgConfig> {
         hub_port: hub_port
             .split(":")
             .nth(1)
-            .ok_or_else(|| anyhow::anyhow!("Invalid hub port format"))?.parse::<u16>()?,
+            .ok_or_else(|| anyhow::anyhow!("Invalid hub port format"))?
+            .parse::<u16>()?,
         device_ip: device_ip
             .split("/")
             .nth(0)
             .ok_or_else(|| anyhow::anyhow!("Invalid device IP format"))?
             .to_string(),
+        file: wg_file.clone(),
     };
 
     Ok(wg_config)
