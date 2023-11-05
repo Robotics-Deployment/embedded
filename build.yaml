@@ -1,0 +1,13 @@
+services:
+  rdembedded:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        IMAGE: ${IMAGE:-robotics-deployment:dev}
+    image: robotics-deployment:embedded
+    container_name: rdembedded
+    volumes:
+      - .:/opt/rdembedded
+    command: ["sleep", "infinity"]
+

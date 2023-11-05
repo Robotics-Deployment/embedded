@@ -16,7 +16,7 @@ jobs:
 
     # Build environment
     - name: Start containers
-      run: export IMAGE=ubuntu:22.04 && docker-compose -f "docker-compose.yml" up -d --build
+      run: export IMAGE=ubuntu:22.04 && docker-compose -f "build.yaml" up -d --build
 
     # Compile and strip binaries
     - name: Build x86_64
@@ -72,8 +72,8 @@ jobs:
       uses: softprops/action-gh-release@v0.1.15
       with:
         files: |
-          ./rdembedded/target/*/release/rdembedded-x86_64
-          ./rdembedded/target/*/release/rdembedded-aarch64
+          ./rdembedded/target/x86_64-unknown-linux-gnu/release/rdembedded-x86_64
+          ./rdembedded/target/aarch64-unknown-linux-gnu/release/rdembedded-aarch64
           ./LICENSE
         token: ${{ secrets.GITHUB_TOKEN }}
         tag_name: ${{ steps.generate_tag.outputs.tag_name }}
