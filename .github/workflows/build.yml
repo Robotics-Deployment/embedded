@@ -16,7 +16,7 @@ jobs:
 
     # Build environment
     - name: Start containers
-      run: docker-compose -f "docker-compose.yml" up -d --build
+      run: export IMAGE=ubuntu:22.04 && docker-compose -f "docker-compose.yml" up -d --build
 
     # Compile and strip binaries
     - name: Build x86_64

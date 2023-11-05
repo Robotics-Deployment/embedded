@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        IMAGE: ${IMAGE:-robotics-deployment:dev}
     image: robotics-deployment:embedded
     privileged: true
     container_name: rdembedded

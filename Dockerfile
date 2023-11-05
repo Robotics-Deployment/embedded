@@ -1,4 +1,5 @@
-FROM robotics-deployment:dev
+ARG IMAGE=robotics-deployment:dev
+FROM ${IMAGE}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
