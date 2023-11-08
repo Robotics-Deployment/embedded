@@ -36,9 +36,15 @@ RUN apt-get update && \
 
 RUN ln -s /usr/bin/lldb-vscode-17 /usr/bin/lldb-vscode
 
+ENV RUSTUP_HOME=/opt/rustup
+ENV CARGO_HOME=/opt/cargo
+
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
-ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PATH="/opt/cargo/bin:${PATH}"
+
+RUN chmod -R 777 /opt/rustup \
+  && chmod -R 777 /opt/cargo
 
 # Add new Rust targets for cross-compilation
 RUN rustup target add x86_64-unknown-linux-gnu \

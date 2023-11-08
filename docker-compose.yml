@@ -8,6 +8,7 @@ services:
     image: robotics-deployment:embedded
     privileged: true
     container_name: rdembedded
+    user: 1000:1000
     environment:
       - DISPLAY=${DISPLAY}
     volumes:

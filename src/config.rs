@@ -1,7 +1,8 @@
 use anyhow::{Context, Result};
 use core::fmt::Formatter;
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::error::Error;
+use std::fmt::{self, Display};
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
@@ -82,21 +83,17 @@ impl DeviceConfig {
         self.clone()
     }
 
-    pub fn validate(&self) -> Result<()> {
+    pub fn validate(&self) -> Result<(), ValidationError> {
         if self.uuid == "" {
-            Err(anyhow::anyhow!("UUID is not set"))?;
-        }
-        if self.fleet == "" {
-            Err(anyhow::anyhow!("Fleet is not set"))?;
-        }
-        if self.interface == "" {
-            Err(anyhow::anyhow!("Interface is not set"))?;
-        }
-        if self.api_url == "" {
-            Err(anyhow::anyhow!("API URL is not set"))?;
-        }
-        if self.file == PathBuf::from("") {
-            Err(anyhow::anyhow!("File is not set"))?;
+            Err(ValidationError::UuidNotSet)?;
+        } else if self.fleet == "" {
+            Err(ValidationError::FleetNotSet)?;
+        } else if self.interface == "" {
+            Err(ValidationError::InterfaceNotSet)?;
+        } else if self.api_url == "" {
+            Err(ValidationError::ApiUrlNotSet)?;
+        } else if self.file == PathBuf::from("") {
+            Err(ValidationError::FileNotSet)?;
         }
         Ok(())
     }
@@ -110,6 +107,31 @@ impl fmt::Display for DeviceConfig {
         )
     }
 }
+
+#[derive(Debug)]
+pub enum ValidationError {
+    UuidNotSet,
+    FleetNotSet,
+    InterfaceNotSet,
+    ApiUrlNotSet,
+    FileNotSet,
+}
+
+// Implement Display for your custom errors to provide a user-friendly description
+impl Display for ValidationError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ValidationError::UuidNotSet => write!(f, "UUID is not set"),
+            ValidationError::FleetNotSet => write!(f, "Fleet is not set"),
+            ValidationError::InterfaceNotSet => write!(f, "Interface is not set"),
+            ValidationError::ApiUrlNotSet => write!(f, "API URL is not set"),
+            ValidationError::FileNotSet => write!(f, "File is not set"),
+        }
+    }
+}
+
+// Implement the Error trait for your custom error type
+impl Error for ValidationError {}
 
 pub fn get_config(rd_file: &PathBuf) -> Result<DeviceConfig> {
     let mut rd_conf: File = File::open(&rd_file)

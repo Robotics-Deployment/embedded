@@ -1,0 +1,6 @@
+device:
+  uuid: 017fe537-bb13-7c35-b52a-cb5490cce7be
+  interface:
+  fleet: 
+  api_url: https://api.roboticsdeployment.com/device
+  file: /etc/rd/cfg.yaml

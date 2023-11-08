@@ -39,6 +39,7 @@ async fn main() -> anyhow::Result<()> {
     // Memory Scope
     {
         if !getuid().is_root() {
+            // Due to wireguard requiring root access
             println!("This program must be run as root.");
             exit(1);
         }

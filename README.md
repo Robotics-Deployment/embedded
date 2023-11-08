@@ -1,5 +1,6 @@
 # Robotics Deployment Embedded
 
+![embedded](rdembedded.png)
 
 [![Build](https://github.com/Robotics-Deployment/embedded/actions/workflows/build.yml/badge.svg)](https://github.com/Robotics-Deployment/embedded/actions/workflows/build.yml)
 
@@ -13,7 +14,7 @@ docker compose build
 
 ---
 
-The embedded code that runs on nodes.
+The embedded code that runs on nodes. 
 
 This module: 
 - Validates the configuration of the system
