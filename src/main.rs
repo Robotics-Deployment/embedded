@@ -1,10 +1,7 @@
-extern crate anyhow;
-extern crate nix;
-extern crate serde;
-extern crate serde_yaml;
+use anyhow;
+use log::{error, info, warn};
+use nix;
 use nix::unistd::getuid;
-use reqwest;
-use std::path::PathBuf;
 use std::process::exit;
 use tokio::net::UdpSocket;
 use tokio::time::{interval, Duration};
@@ -13,24 +10,9 @@ use uuid::Uuid;
 mod config;
 mod wg;
 
-async fn fetch_config(cfg: &config::DeviceConfig) -> anyhow::Result<()> {
-    let response = reqwest::get(format!("{}/{}", cfg.get_api_url(), cfg.get_uuid())).await?;
-
-    if response.status().is_success() {
-        let body = response.text().await?;
-        let rd_file = PathBuf::from("/etc/rd/cfg.yaml");
-        println!("Writing configuration to {}", rd_file.to_str().unwrap());
-        std::fs::write(rd_file, body)?;
-    } else {
-        Err(anyhow::anyhow!(
-            "Unable to fetch configuration from API server"
-        ))?;
-    }
-    Ok(())
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    info!("Starting rdembedded");
     let socket: Option<UdpSocket>;
     let mut wg_config = wg::WgConfig::default();
     let mut device_config = config::DeviceConfig::default();
@@ -39,34 +21,50 @@ async fn main() -> anyhow::Result<()> {
     // Memory Scope
     {
         if !getuid().is_root() {
-            // Due to wireguard requiring root access
-            println!("This program must be run as root.");
+            // Due to wireguard configurations requiring root access
+            error!("This program must be run as root.");
             exit(1);
         }
 
-        // Configuration
-        let rd_file = PathBuf::from(device_config.get_file());
-        let r = config::get_config(&rd_file);
+        let r = config::get_config(&device_config.get_file());
+        if r.is_err() {
+            error!("Unable to read configuration file");
+            exit(1);
+        }
+
+        device_config = r.unwrap();
+        let r = device_config.validate();
 
         match r {
-            Err(e) => {
-                println!("Unable to read config file: {}", e);
-                exit(1);
-            }
-            Ok(cfg) => {
-                device_config = cfg;
-                println!("Using config file {}", rd_file.to_str().unwrap());
-                match device_config.validate() {
-                    Err(e) => {
-                        println!("Incomplete config file: {}", e);
-                        println!("Attempting to fetch from API server");
-                        let _ = fetch_config(&device_config).await;
-                        exit(1);
-                    }
-                    Ok(_) => {
-                        println!("Configuration is valid");
+            Err(e) => match e {
+                config::ValidationError::UuidNotSet => {
+                    error!("UUID not set in configuration file, cannot continue...");
+                    exit(1);
+                }
+                config::ValidationError::FleetNotSet => {
+                    info!("Fleet not set in configuration file, fetching...");
+                    let result_fetch = device_config.fetch().await;
+                    match result_fetch {
+                        Err(error) => {
+                            error!("Unable to fetch configuration: {}", error);
+                            exit(1);
+                        }
+                        Ok(fetched) => {
+                            info!("Succeissfully fetched configuration");
+                            device_config = fetched;
+                        }
                     }
                 }
+                _ => {
+                    error!("Unhandled error validating configuration file: {}", e);
+                    exit(1);
+                }
+            },
+            Ok(_) => {
+                info!(
+                    "Using configuration file {}",
+                    device_config.get_file().to_str().unwrap()
+                );
             }
         }
 
@@ -91,9 +89,9 @@ async fn main() -> anyhow::Result<()> {
             "Using config file: {}",
             device_config.get_file().to_str().unwrap()
         );
-        println!("Using UUID: {}", device_config.get_uuid());
+        println!("Using device UUID: {}", device_config.get_uuid());
         println!("Using network interface: {}", device_config.get_interface());
-        println!("Using fleet: {}", device_config.get_fleet());
+        println!("Using fleet UUID: {}", device_config.get_fleet_uuid());
         println!("Using API URL: {}", device_config.get_api_url());
         println!(
             "Using Wireguard config file: {}",

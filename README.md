@@ -14,9 +14,11 @@ docker compose build
 
 ---
 
-The embedded code that runs on nodes. 
+The embedded code that runs on remote devices. 
 
 This module: 
-- Validates the configuration of the system
-- Looks up the IP of the hub on wireguard 
-- Sends a heartbeat to the hub
+
+- Self validates the configuration
+- If the configuration is incomplete, it will fetch it
+- Configures its wireguard VPN
+- Sends a heartbeat to the server
