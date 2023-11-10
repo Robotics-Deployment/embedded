@@ -1,5 +1,6 @@
 use anyhow;
-use log::{error, info, warn};
+use env_logger::Builder;
+use log::{error, info, warn, LevelFilter};
 use nix;
 use nix::unistd::getuid;
 use std::process::exit;
@@ -12,7 +13,9 @@ mod wg;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    Builder::new().filter_level(LevelFilter::Info).init();
     info!("Starting rdembedded");
+
     let socket: Option<UdpSocket>;
     let mut wg_config = wg::WgConfig::default();
     let mut device_config = config::DeviceConfig::default();
