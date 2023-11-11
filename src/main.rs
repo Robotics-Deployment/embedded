@@ -18,7 +18,7 @@ async fn main() -> anyhow::Result<()> {
 
     let socket: Option<UdpSocket>;
     let mut wg_config = wg::WgConfig::default();
-    let mut device_config = config::DeviceConfig::default();
+    let mut device_config = config::Device::default();
     let mut interval = interval(Duration::from_secs(1));
 
     // Memory Scope

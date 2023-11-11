@@ -10,17 +10,17 @@ use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    device: DeviceConfig,
+    device: Device,
 }
 
 impl Config {
-    pub fn get_device(&self) -> &DeviceConfig {
+    pub fn get_device(&self) -> &Device {
         &self.device
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct DeviceConfig {
+pub struct Device {
     uuid: String,
     fleet_uuid: String,
     interface: String,
@@ -28,12 +28,12 @@ pub struct DeviceConfig {
     file: PathBuf,
 }
 
-impl DeviceConfig {
-    pub fn default() -> DeviceConfig {
-        DeviceConfig {
+impl Device {
+    pub fn default() -> Device {
+        Device {
             uuid: String::from(""),
             fleet_uuid: String::from(""),
-            interface: String::from(""),
+            interface: String::from("/etc/wireguard/rd0.conf"),
             api_url: String::from("https://api.roboticsdeployment.com/device"),
             file: PathBuf::from("/etc/rd/cfg.yaml"),
         }
@@ -99,17 +99,17 @@ impl DeviceConfig {
         Ok(())
     }
 
-    pub async fn fetch(&self) -> Result<DeviceConfig> {
+    pub async fn fetch(&self) -> Result<Device> {
         let response = reqwest::Client::new()
             .post(self.get_api_url())
             .json(&self)
             .send()
             .await?;
-        let device_config: DeviceConfig = response.json().await?;
+        let device_config: Device = response.json().await?;
         Ok(device_config)
     }
 }
-impl fmt::Display for DeviceConfig {
+impl fmt::Display for Device {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
             f,
@@ -144,7 +144,7 @@ impl Display for ValidationError {
 // Implement the Error trait for your custom error type
 impl Error for ValidationError {}
 
-pub fn get_config(rd_file: &PathBuf) -> Result<DeviceConfig> {
+pub fn get_config(rd_file: &PathBuf) -> Result<Device> {
     let mut rd_conf: File = File::open(&rd_file)
         .with_context(|| format!("Unable to open rd config file at {:?}", rd_file))?;
     let mut rd_contents = String::new();
