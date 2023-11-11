@@ -2,20 +2,33 @@ use anyhow::{Context, Result};
 use core::fmt::Formatter;
 use reqwest;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use std::fmt::{self, Display};
 use std::fs::File;
-use std::io::Read;
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use std::path::PathBuf;
+
+use crate::errors::ValidationError;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
-    device: Device,
+    pub device: Device,
+    pub wireguard: Wireguard,
 }
 
 impl Config {
+    pub fn default() -> Config {
+        Config {
+            device: Device::default(),
+            wireguard: Wireguard::default(),
+        }
+    }
+
     pub fn get_device(&self) -> &Device {
         &self.device
+    }
+
+    pub fn get_wireguard(&self) -> &Wireguard {
+        &self.wireguard
     }
 }
 
@@ -79,9 +92,9 @@ impl Device {
         self
     }
 
-    pub fn set_file(&mut self, file: PathBuf) -> Self {
+    pub fn set_file(&mut self, file: PathBuf) -> &Self {
         self.file = file;
-        self.clone()
+        self
     }
 
     pub fn validate(&self) -> Result<(), ValidationError> {
@@ -108,7 +121,22 @@ impl Device {
         let device_config: Device = response.json().await?;
         Ok(device_config)
     }
+
+    pub fn load_config(&mut self, rd_file: &PathBuf) -> Result<Device> {
+        let mut rd_conf: File = File::open(&rd_file)
+            .with_context(|| format!("Unable to open rd config file at {:?}", rd_file))?;
+        let mut rd_contents = String::new();
+        rd_conf
+            .read_to_string(&mut rd_contents)
+            .context("Unable to read rd config file")?;
+        let config: Config =
+            serde_yaml::from_str(&rd_contents).context("Unable to deserialize rd YAML")?;
+        let device_config = config.get_device().clone();
+
+        Ok(device_config)
+    }
 }
+
 impl fmt::Display for Device {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
@@ -118,42 +146,133 @@ impl fmt::Display for Device {
         )
     }
 }
-
-#[derive(Debug)]
-pub enum ValidationError {
-    UuidNotSet,
-    FleetNotSet,
-    InterfaceNotSet,
-    ApiUrlNotSet,
-    FileNotSet,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Wireguard {
+    pub hub_ip: String,
+    pub hub_port: u16,
+    pub device_ip: String,
+    pub file: PathBuf,
 }
 
-// Implement Display for your custom errors to provide a user-friendly description
-impl Display for ValidationError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ValidationError::UuidNotSet => write!(f, "UUID is not set"),
-            ValidationError::FleetNotSet => write!(f, "Fleet is not set"),
-            ValidationError::InterfaceNotSet => write!(f, "Interface is not set"),
-            ValidationError::ApiUrlNotSet => write!(f, "API URL is not set"),
-            ValidationError::FileNotSet => write!(f, "File is not set"),
+impl Wireguard {
+    pub fn default() -> Wireguard {
+        Wireguard {
+            hub_ip: String::from(""),
+            hub_port: 0,
+            device_ip: String::from(""),
+            file: PathBuf::from("/etc/wireguard/rd0.conf"),
+        }
+    }
+
+    pub fn get_hub_ip(&self) -> &str {
+        &self.hub_ip
+    }
+
+    pub fn get_hub_port(&self) -> u16 {
+        self.hub_port
+    }
+
+    pub fn get_device_ip(&self) -> &str {
+        &self.device_ip
+    }
+
+    pub fn get_file(&self) -> &PathBuf {
+        &self.file
+    }
+
+    pub fn set_hub_ip(&mut self, hub_ip: String) -> &Self {
+        self.hub_ip = hub_ip;
+        self
+    }
+
+    pub fn set_hub_port(&mut self, hub_port: u16) -> &Self {
+        self.hub_port = hub_port;
+        self
+    }
+
+    pub fn set_device_ip(&mut self, device_ip: String) -> &Self {
+        self.device_ip = device_ip;
+        self
+    }
+
+    pub fn set_file(&mut self, file: PathBuf) -> &Self {
+        self.file = file;
+        self
+    }
+
+    pub fn load_config(&mut self, wg_file: &PathBuf) -> Result<Wireguard> {
+        let wg_conf = File::open(&wg_file)
+            .with_context(|| format!("Unable to open wireguard config file at {:?}", wg_file))?;
+        let mut reader = BufReader::new(wg_conf);
+
+        let hub_ip = Wireguard::scan(&mut reader, "[Peer]", "AllowedIPs")
+            .context("Failed to scan for hub IP in wireguard config")?;
+        let hub_port = Wireguard::scan(&mut reader, "[Peer]", "Endpoint")
+            .context("Failed to scan for hub port in wireguard config")?;
+        let device_ip = Wireguard::scan(&mut reader, "[Interface]", "Address")
+            .context("Failed to scan for device IP in wireguard config")?;
+
+        let wg_config = Wireguard {
+            hub_ip: hub_ip
+                .split("/")
+                .nth(0)
+                .ok_or_else(|| anyhow::anyhow!("Invalid hub IP format"))?
+                .to_string(),
+            hub_port: hub_port
+                .split(":")
+                .nth(1)
+                .ok_or_else(|| anyhow::anyhow!("Invalid hub port format"))?
+                .parse::<u16>()?,
+            device_ip: device_ip
+                .split("/")
+                .nth(0)
+                .ok_or_else(|| anyhow::anyhow!("Invalid device IP format"))?
+                .to_string(),
+            file: wg_file.clone(),
+        };
+
+        Ok(wg_config)
+    }
+
+    fn scan(reader: &mut BufReader<File>, device: &str, field: &str) -> Result<String> {
+        let mut inside_peer_section = false;
+        let mut field_value = String::new();
+        for line in reader.lines() {
+            let line = line.unwrap();
+            if line.trim() == device {
+                inside_peer_section = true;
+            } else if inside_peer_section {
+                if line.starts_with(field) {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() > 2 {
+                        let ip_address: &str = parts[2];
+                        if !ip_address.is_empty() {
+                            field_value = ip_address.to_string();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // Reset the reader to the beginning of the file
+        reader.seek(SeekFrom::Start(0)).unwrap();
+        if field_value.is_empty() {
+            return Err(anyhow::anyhow!("Unable to find {} in {}", field, device));
+        } else {
+            return Ok(field_value);
         }
     }
 }
 
-// Implement the Error trait for your custom error type
-impl Error for ValidationError {}
-
-pub fn get_config(rd_file: &PathBuf) -> Result<Device> {
-    let mut rd_conf: File = File::open(&rd_file)
-        .with_context(|| format!("Unable to open rd config file at {:?}", rd_file))?;
-    let mut rd_contents = String::new();
-    rd_conf
-        .read_to_string(&mut rd_contents)
-        .context("Unable to read rd config file")?;
-    let config: Config =
-        serde_yaml::from_str(&rd_contents).context("Unable to deserialize rd YAML")?;
-    let device_config = config.get_device().clone();
-
-    Ok(device_config)
+impl Display for Wireguard {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(
+            f,
+            "hub_ip: {}, hub_port: {}, device_ip: {}, file: {}",
+            self.hub_ip,
+            self.hub_port,
+            self.device_ip,
+            self.file.display()
+        )
+    }
 }
