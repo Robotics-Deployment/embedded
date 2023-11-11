@@ -30,22 +30,25 @@ async fn main() -> anyhow::Result<()> {
         }
 
         let r = config::get_config(&device_config.get_file());
-        if r.is_err() {
-            error!("Unable to read configuration file");
-            exit(1);
-        }
 
-        device_config = r.unwrap();
+        device_config = match r {
+            Err(e) => {
+                error!("Unable to read configuration file: {}", e);
+                exit(1);
+            }
+            Ok(cfg) => cfg,
+        };
+
         let r = device_config.validate();
 
         match r {
             Err(e) => match e {
-                config::ValidationError::UuidNotSet => {
-                    error!("UUID not set in configuration file, cannot continue...");
+                config::ValidationError::FleetNotSet => {
+                    error!("Fleet not set in configuration file. Device does not know which fleet it belongs to. cannot continue...");
                     exit(1);
                 }
-                config::ValidationError::FleetNotSet => {
-                    info!("Fleet not set in configuration file, fetching...");
+                config::ValidationError::UuidNotSet => {
+                    info!("Device UUID not set in configuration file, fetching...");
                     let result_fetch = device_config.fetch().await;
                     match result_fetch {
                         Err(error) => {
@@ -53,7 +56,7 @@ async fn main() -> anyhow::Result<()> {
                             exit(1);
                         }
                         Ok(fetched) => {
-                            info!("Succeissfully fetched configuration");
+                            info!("Successfully fetched configuration");
                             device_config = fetched;
                         }
                     }
