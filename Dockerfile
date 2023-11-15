@@ -22,20 +22,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-RUN echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" >> /etc/apt/sources.list && \
-  echo "deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main" >> /etc/apt/sources.list
-
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends \
-  llvm-17 \
-  lldb-17 \
-  && apt-get autoremove -y \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
-
-RUN ln -s /usr/bin/lldb-vscode-17 /usr/bin/lldb-vscode
-
 ENV RUSTUP_HOME=/opt/rustup
 ENV CARGO_HOME=/opt/cargo
 
@@ -48,8 +34,7 @@ RUN chmod -R 777 /opt/rustup \
 
 # Add new Rust targets for cross-compilation
 RUN rustup target add x86_64-unknown-linux-gnu \
-  && rustup target add aarch64-unknown-linux-gnu \
-  && rustup component add rust-analyzer
+  && rustup target add aarch64-unknown-linux-gnu
 
 COPY . /opt/rdembedded
 WORKDIR /opt/rdembedded

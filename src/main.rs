@@ -1,8 +1,7 @@
-use anyhow;
 use env_logger::Builder;
 use log::{error, info, warn, LevelFilter};
-use nix;
 use nix::unistd::getuid;
+use std::path::PathBuf;
 use std::process::exit;
 use tokio::net::UdpSocket;
 use tokio::time::{interval, Duration};
@@ -16,8 +15,10 @@ async fn main() -> anyhow::Result<()> {
     Builder::new().filter_level(LevelFilter::Info).init();
     info!("Starting rdembedded");
 
+    let mut device: config::Device;
+    let mut wireguard: config::Wireguard;
+
     let socket: Option<UdpSocket>;
-    let mut config = config::Config::default();
     let mut interval = interval(Duration::from_secs(1));
 
     // Memory Scope
@@ -29,8 +30,7 @@ async fn main() -> anyhow::Result<()> {
         }
 
         // Device
-        let mut device: config::Device = config.get_device().clone();
-        let r = device.load_config(device.clone().get_file());
+        let r = config::Device::load_config(&PathBuf::from("/etc/rdembedded/cfg.yaml"));
 
         device = match r {
             Err(e) => {
@@ -45,7 +45,7 @@ async fn main() -> anyhow::Result<()> {
 
         let r = device.validate();
 
-        match r {
+        device = match r {
             Err(e) => match e {
                 errors::ValidationError::FleetNotSet => {
                     error!("Fleet not set in configuration file. Device does not know which fleet it belongs to. cannot continue...");
@@ -59,9 +59,9 @@ async fn main() -> anyhow::Result<()> {
                             error!("Unable to fetch configuration: {}", error);
                             exit(1);
                         }
-                        Ok(fetched) => {
+                        Ok(dev) => {
                             info!("Successfully fetched configuration");
-                            device = fetched;
+                            dev
                         }
                     }
                 }
@@ -70,28 +70,38 @@ async fn main() -> anyhow::Result<()> {
                     exit(1);
                 }
             },
-            Ok(_) => {
+            Ok(dev) => {
                 info!("device config validated: {:?}", device);
+                dev.clone()
             }
-        }
-        config.device = device;
+        };
 
         // Wireguard
-        let mut wireguard: config::Wireguard = config.get_wireguard().clone();
-        let r = wireguard.load_config(wireguard.clone().get_file());
+        let r = config::Wireguard::load_config(&PathBuf::from("/etc/wireguard/rd0.conf"));
 
-        match r {
+        wireguard = match r {
             Err(e) => {
                 error!("Unable to read wireguard config file: {}", e);
-                exit(1);
+                let result_fetch = config::Wireguard::fetch(&config::Wireguard::init()).await;
+                match result_fetch {
+                    Err(error) => {
+                        error!("Unable to fetch wireguard configuration: {}", error);
+                        exit(1);
+                    }
+                    Ok(cfg) => {
+                        info!("Successfully fetched wireguard configuration");
+                        cfg
+                    }
+                }
             }
             Ok(cfg) => {
-                wireguard = cfg;
-                info!("Using wireguard config file {:?}", wireguard.get_file());
+                info!("Using wireguard config file {:?}", cfg.get_file());
+                cfg
             }
-        }
+        };
 
-        info!("wireguard config validated: {:?}", wireguard);
+        wireguard = wireguard.set_uuid(device.get_uuid().to_string());
+        info!("wireguard config: {:?}", wireguard);
 
         // Socket Setup
         println!(
@@ -99,6 +109,7 @@ async fn main() -> anyhow::Result<()> {
             wireguard.get_device_ip(),
             wireguard.get_hub_port()
         );
+
         loop {
             let r = UdpSocket::bind(format!(
                 "{}:{}",
@@ -116,22 +127,21 @@ async fn main() -> anyhow::Result<()> {
                 break;
             }
             let err_str = r.err().unwrap().to_string();
-            println!(
+            error!(
                 "{}",
                 format!("Unable to bind socket, retrying in 1 second: {err_str}")
             );
             interval.tick().await;
         }
 
-        println!(
+        info!(
             "Sending heartbeat packet to {}:{}",
             wireguard.get_hub_ip(),
             wireguard.get_hub_port()
         );
-        config.wireguard = wireguard;
     }
 
-    let uuid_reader = Uuid::parse_str(config.get_device().get_uuid());
+    let uuid_reader = Uuid::parse_str(device.get_uuid());
     let uuid = match uuid_reader {
         Err(e) => {
             error!("Unable to parse UUID: {}", e);
@@ -148,11 +158,7 @@ async fn main() -> anyhow::Result<()> {
             .unwrap()
             .send_to(
                 uuid.as_bytes(),
-                format!(
-                    "{}:{}",
-                    config.get_wireguard().get_hub_ip(),
-                    config.get_wireguard().get_hub_port()
-                ),
+                format!("{}:{}", wireguard.get_hub_ip(), wireguard.get_hub_port()),
             )
             .await;
 
