@@ -22,9 +22,13 @@ mod tests {
         match result {
             Err(e) => match e {
                 errors::ValidationError::UuidNotSet => {}
-                _ => panic!("Expected UuidNotSet error, got a different error: {}", e),
+                _ => {
+                    panic!("Expected UuidNotSet error, got a different error: {}", e);
+                }
             },
-            Ok(_) => panic!("Config should be invalid but was validated successfully"),
+            Ok(_) => {
+                panic!("Config should be invalid but was validated successfully");
+            }
         }
     }
 
@@ -38,11 +42,12 @@ mod tests {
             Err(e) => match e {
                 errors::ValidationError::FleetNotSet => {}
                 _ => {
-                    error!("Expected FleetNotSet error, got a different error: {}", e);
-                    exit(1);
+                    panic!("Expected FleetNotSet error, got a different error: {}", e);
                 }
             },
-            Ok(_) => error!("Config should be invalid but was validated successfully"),
+            Ok(_) => {
+                panic!("Config should be invalid but was validated successfully");
+            }
         }
     }
 
@@ -53,23 +58,29 @@ mod tests {
         let result = conf.validate();
 
         if let Err(e) = result {
-            panic!("Config should be valid but was invalid: {}", e)
+            panic!("Config should be valid but was invalid: {}", e);
         }
     }
 
     #[tokio::test]
     async fn test_fetch_config() {
-        let conf = config::Device::load_config(&PathBuf::from(BARE_CFG_FILE))
+        let mut conf = config::Device::load_config(&PathBuf::from(BARE_CFG_FILE))
             .expect("Unable to read config file")
             .set_api_url(API_URL.to_string());
 
         let result = conf.fetch().await;
 
-        match result {
+        conf = match result {
+            Ok(cfg) => cfg,
+            Err(e) => {
+                panic!("Unable to fetch config: {}", e);
+            }
+        };
+
+        match conf.validate() {
             Ok(_) => {}
             Err(e) => {
-                error!("Unable to fetch config: {}", e);
-                exit(1);
+                panic!("Config should be valid but was invalid: {}", e);
             }
         }
     }
