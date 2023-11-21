@@ -1,17 +1,13 @@
 use rdembedded::config;
 use rdembedded::errors;
 use std::path::PathBuf;
-use tokio::time::{timeout, Duration};
-
-use log::{error, info, warn, LevelFilter};
 
 static BARE_CFG_FILE: &str = "tests/bare_cfg.yaml";
 static CFG_FILE: &str = "tests/cfg.yaml";
 static API_URL: &str = "http://127.0.0.1:8080/device";
+
 #[cfg(test)]
 mod tests {
-    use std::process::exit;
-
     use super::*;
 
     #[test]
