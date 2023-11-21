@@ -12,9 +12,11 @@ services:
     network_mode: host
     environment:
       - DISPLAY=${DISPLAY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - .:/opt/rdembedded
       - ~/.gitconfig:/home/dev/.gitconfig
+      - ~/.config/lazygit:/home/dev/.config/lazygit
       - ~/.config/nvim:/home/dev/.config/nvim
       - ~/.config/github-copilot:/home/dev/.config/github-copilot
       - ~/.local/state/nvim:/home/dev/.local/state/nvim
@@ -22,4 +24,3 @@ services:
       - ~/.cache/nvim:/home/dev/.cache/nvim
       - /tmp/.X11-unix:/tmp/.X11-unix
     command: ["sleep", "infinity"]
-
