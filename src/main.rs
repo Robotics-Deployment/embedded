@@ -30,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
         }
 
         // Device
-        let r = models::Device::load_config(&PathBuf::from("/etc/rdembedded/cfg.yaml"));
+        let r = models::Device::load_config(&PathBuf::from("/etc/rd/cfg.yaml"));
 
         device = match r {
             Err(e) => {
