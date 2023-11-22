@@ -2,6 +2,7 @@ use rdembedded::errors;
 use rdembedded::models;
 use std::path::PathBuf;
 
+static EMPTY_CFG_FILE: &str = "tests/empty_cfg.yaml";
 static BARE_CFG_FILE: &str = "tests/bare_cfg.yaml";
 static CFG_FILE: &str = "tests/cfg.yaml";
 static API_URL: &str = "http://127.0.0.1:8080/device";
@@ -12,7 +13,8 @@ mod tests {
 
     #[test]
     fn test_empty_config() {
-        let conf = models::Device::init().set_file(PathBuf::from(BARE_CFG_FILE));
+        let conf = models::Device::load_config(&PathBuf::from(EMPTY_CFG_FILE))
+            .expect("Unable to read config file");
 
         let result = conf.validate();
         match result {

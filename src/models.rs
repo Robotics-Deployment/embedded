@@ -14,23 +14,6 @@ pub struct Config {
     pub wireguard: Wireguard,
 }
 
-impl Config {
-    pub fn init() -> Config {
-        Config {
-            device: Device::init(),
-            wireguard: Wireguard::init(),
-        }
-    }
-
-    pub fn get_device(&self) -> &Device {
-        &self.device
-    }
-
-    pub fn get_wireguard(&self) -> &Wireguard {
-        &self.wireguard
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Device {
     uuid: String,
@@ -40,15 +23,6 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn init() -> Device {
-        Device {
-            uuid: String::from(""),
-            fleet_uuid: String::from(""),
-            api_url: String::from("https://api.roboticsdeployment.com/device"),
-            file: PathBuf::from("/etc/rd/cfg.yaml"),
-        }
-    }
-
     pub fn get_uuid(&self) -> &str {
         &self.uuid
     }
