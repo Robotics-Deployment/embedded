@@ -1,5 +1,5 @@
-use rdembedded::config;
 use rdembedded::errors;
+use rdembedded::models;
 use std::path::PathBuf;
 
 static BARE_CFG_FILE: &str = "tests/bare_cfg.yaml";
@@ -12,14 +12,14 @@ mod tests {
 
     #[test]
     fn test_empty_config() {
-        let conf = config::Device::init().set_file(PathBuf::from(BARE_CFG_FILE));
+        let conf = models::Device::init().set_file(PathBuf::from(BARE_CFG_FILE));
 
         let result = conf.validate();
         match result {
             Err(e) => match e {
-                errors::ValidationError::UuidNotSet => {}
+                errors::ValidationNotSetError::Uuid => {}
                 _ => {
-                    panic!("Expected UuidNotSet error, got a different error: {}", e);
+                    panic!("Expected Uuid error, got a different error: {}", e);
                 }
             },
             Ok(_) => {
@@ -30,15 +30,15 @@ mod tests {
 
     #[test]
     fn test_bare_config() {
-        let conf = config::Device::load_config(&PathBuf::from(BARE_CFG_FILE))
+        let conf = models::Device::load_config(&PathBuf::from(BARE_CFG_FILE))
             .expect("Unable to read config file");
         let result = conf.validate();
 
         match result {
             Err(e) => match e {
-                errors::ValidationError::FleetNotSet => {}
+                errors::ValidationNotSetError::Fleet => {}
                 _ => {
-                    panic!("Expected FleetNotSet error, got a different error: {}", e);
+                    panic!("Expected Fleet error, got a different error: {}", e);
                 }
             },
             Ok(_) => {
@@ -49,7 +49,7 @@ mod tests {
 
     #[test]
     fn test_config() {
-        let conf = config::Device::load_config(&PathBuf::from(CFG_FILE))
+        let conf = models::Device::load_config(&PathBuf::from(CFG_FILE))
             .expect("Unable to read config file");
         let result = conf.validate();
 
@@ -60,7 +60,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_fetch_config() {
-        let mut conf = config::Device::load_config(&PathBuf::from(BARE_CFG_FILE))
+        let mut conf = models::Device::load_config(&PathBuf::from(BARE_CFG_FILE))
             .expect("Unable to read config file")
             .set_api_url(API_URL.to_string());
 

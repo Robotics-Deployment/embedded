@@ -7,16 +7,16 @@ use tokio::net::UdpSocket;
 use tokio::time::{interval, Duration};
 use uuid::Uuid;
 
-mod config;
 mod errors;
+mod models;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     Builder::new().filter_level(LevelFilter::Info).init();
     info!("Starting rdembedded");
 
-    let mut device: config::Device;
-    let mut wireguard: config::Wireguard;
+    let mut device: models::Device;
+    let mut wireguard: models::Wireguard;
 
     let socket: Option<UdpSocket>;
     let mut interval = interval(Duration::from_secs(1));
@@ -30,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
         }
 
         // Device
-        let r = config::Device::load_config(&PathBuf::from("/etc/rdembedded/cfg.yaml"));
+        let r = models::Device::load_config(&PathBuf::from("/etc/rdembedded/cfg.yaml"));
 
         device = match r {
             Err(e) => {
@@ -47,11 +47,11 @@ async fn main() -> anyhow::Result<()> {
 
         device = match r {
             Err(e) => match e {
-                errors::ValidationError::FleetNotSet => {
+                errors::ValidationNotSetError::Fleet => {
                     error!("Fleet not set in configuration file. Device does not know which fleet it belongs to. cannot continue...");
                     exit(1);
                 }
-                errors::ValidationError::UuidNotSet => {
+                errors::ValidationNotSetError::Uuid => {
                     info!("Device UUID not set in configuration file, fetching...");
                     let result_fetch = device.fetch().await;
                     match result_fetch {
@@ -77,12 +77,12 @@ async fn main() -> anyhow::Result<()> {
         };
 
         // Wireguard
-        let r = config::Wireguard::load_config(&PathBuf::from("/etc/wireguard/rd0.conf"));
+        let r = models::Wireguard::load_config(&PathBuf::from("/etc/wireguard/rd0.conf"));
 
         wireguard = match r {
             Err(e) => {
                 error!("Unable to read wireguard config file: {}", e);
-                let result_fetch = config::Wireguard::fetch(&config::Wireguard::init()).await;
+                let result_fetch = models::Wireguard::fetch(&models::Wireguard::init()).await;
                 match result_fetch {
                     Err(error) => {
                         error!("Unable to fetch wireguard configuration: {}", error);
