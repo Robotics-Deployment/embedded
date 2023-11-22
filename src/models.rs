@@ -9,17 +9,12 @@ use std::path::PathBuf;
 use crate::errors::ValidationNotSetError;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Config {
-    pub device: Device,
-    pub wireguard: Wireguard,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Device {
-    uuid: String,
-    fleet_uuid: String,
-    api_url: String,
-    file: PathBuf,
+    pub created_at: u64,
+    pub uuid: String,
+    pub fleet_uuid: String,
+    pub api_url: String,
+    pub file: PathBuf,
 }
 
 impl Device {
@@ -60,7 +55,9 @@ impl Device {
     }
 
     pub fn validate(&self) -> Result<&Self, ValidationNotSetError> {
-        if self.uuid.is_empty() {
+        if self.created_at == 0 {
+            Err(ValidationNotSetError::CreatedAt)?;
+        } else if self.uuid.is_empty() {
             Err(ValidationNotSetError::Uuid)?;
         } else if self.fleet_uuid.is_empty() {
             Err(ValidationNotSetError::Fleet)?;
@@ -107,6 +104,7 @@ impl fmt::Display for Device {
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Wireguard {
+    pub created_at: u64,
     pub uuid: String,
     pub hub_ip: String,
     pub hub_port: u16,
@@ -118,6 +116,7 @@ pub struct Wireguard {
 impl Wireguard {
     pub fn init() -> Wireguard {
         Wireguard {
+            created_at: 0,
             uuid: String::from(""),
             hub_ip: String::from(""),
             hub_port: 0,
@@ -194,6 +193,7 @@ impl Wireguard {
             .context("Failed to scan for device IP in wireguard config")?;
 
         let wireguard = Wireguard {
+            created_at: 0,
             uuid: Wireguard::init().get_uuid().to_string(),
             hub_ip: hub_ip
                 .split('/')

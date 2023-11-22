@@ -19,7 +19,7 @@ mod tests {
         let result = conf.validate();
         match result {
             Err(e) => match e {
-                errors::ValidationNotSetError::Uuid => {}
+                errors::ValidationNotSetError::CreatedAt => {}
                 _ => {
                     panic!("Expected Uuid error, got a different error: {}", e);
                 }
