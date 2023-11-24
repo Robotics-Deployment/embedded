@@ -2,24 +2,32 @@ use std::error::Error;
 use std::fmt::{self, Display};
 
 #[derive(Debug)]
-pub enum ValidationNotSetError {
+pub enum NotSetError {
     CreatedAt,
     Uuid,
     Fleet,
     ApiUrl,
     File,
+    PrivateKey,
+    Address,
+    Peers,
+    WireguardFile,
 }
 
-impl Display for ValidationNotSetError {
+impl Display for NotSetError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ValidationNotSetError::CreatedAt => write!(f, "Created At is not set"),
-            ValidationNotSetError::Uuid => write!(f, "UUID is not set"),
-            ValidationNotSetError::Fleet => write!(f, "Fleet is not set"),
-            ValidationNotSetError::ApiUrl => write!(f, "API URL is not set"),
-            ValidationNotSetError::File => write!(f, "File is not set"),
+            NotSetError::CreatedAt => write!(f, "Created At is not set"),
+            NotSetError::Uuid => write!(f, "UUID is not set"),
+            NotSetError::Fleet => write!(f, "Fleet is not set"),
+            NotSetError::ApiUrl => write!(f, "API URL is not set"),
+            NotSetError::File => write!(f, "File is not set"),
+            NotSetError::PrivateKey => write!(f, "Private Key is not set"),
+            NotSetError::Address => write!(f, "Address is not set"),
+            NotSetError::Peers => write!(f, "Peers is not set"),
+            NotSetError::WireguardFile => write!(f, "Wireguard File is not set"),
         }
     }
 }
 
-impl Error for ValidationNotSetError {}
+impl Error for NotSetError {}

@@ -1,16 +1,12 @@
-# Ignore the target directory which contains build outputs
+
+# Ignore Rust build and target directory at any depth
 **/target/
-**/Cargo.lock
 
-# Ignore .git directory
-.git/
+# Ignore Rust log files
+**/*.log
 
-# Ignore .gitignore file
+# Optionally, ignore other common file types that are usually not needed in builds
+*.md
+.DS_Store
+.git
 .gitignore
-
-# Ignore any temporary files
-*.swp
-*.bak
-*.tmp
-*~
-*.rs.bk

@@ -1,15 +1,58 @@
 use anyhow::{Context, Result};
+use async_trait::async_trait;
 use core::fmt::Formatter;
-use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
+use ini::Ini;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::fmt;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
+use std::io::{Read, Write};
 use std::path::PathBuf;
 
-use crate::errors::ValidationNotSetError;
+use crate::errors::NotSetError;
+
+#[async_trait]
+pub trait Configurable: Serialize + DeserializeOwned {
+    fn get_api_url(&self) -> &str;
+    fn get_file_path(&self) -> &PathBuf;
+    async fn fetch(&self) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let response = reqwest::Client::new()
+            .post(self.get_api_url())
+            .json(&self)
+            .send()
+            .await?;
+        let config: Self = response.json().await?;
+        Ok(config)
+    }
+    fn load_config(file_path: &PathBuf) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut file = File::open(file_path)
+            .with_context(|| format!("Unable to open config file at {:?}", file_path))?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)
+            .context("Unable to read config file")?;
+        let config: Self = serde_yaml::from_str(&contents).context("Unable to deserialize YAML")?;
+        Ok(config)
+    }
+    fn save_config(&self) -> Result<()> {
+        let file_path = self.get_file_path();
+        let mut file = File::create(file_path)?;
+        let yaml = serde_yaml::to_string(&self)?;
+        file.write_all(yaml.as_bytes())?;
+        Ok(())
+    }
+}
+
+pub trait Validatable {
+    fn validate(&self) -> Result<&Self, NotSetError>;
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Device {
+pub struct DeviceConfig {
     pub created_at: u64,
     pub uuid: String,
     pub fleet_uuid: String,
@@ -17,83 +60,155 @@ pub struct Device {
     pub file: PathBuf,
 }
 
-impl Device {
-    pub fn get_uuid(&self) -> &str {
-        &self.uuid
-    }
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WireGuardConfig {
+    created_at: u64,
+    interface: InterfaceConfig,
+    peers: Vec<PeerConfig>,
+    api_url: String,
+    file: PathBuf,
+    wg_file: PathBuf,
+}
 
-    pub fn get_fleet_uuid(&self) -> &str {
-        &self.fleet_uuid
-    }
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct InterfaceConfig {
+    private_key: String,
+    address: String,
+    listen_port: Option<u16>,
+}
 
-    pub fn get_api_url(&self) -> &str {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PeerConfig {
+    public_key: String,
+    allowed_ips: Vec<String>,
+    endpoint: Option<String>,
+}
+
+impl Configurable for DeviceConfig {
+    fn get_api_url(&self) -> &str {
         &self.api_url
     }
-
-    pub fn get_file(&self) -> &PathBuf {
+    fn get_file_path(&self) -> &PathBuf {
         &self.file
-    }
-
-    pub fn set_uuid(mut self, uuid: String) -> Self {
-        self.uuid = uuid;
-        self
-    }
-
-    pub fn set_fleet_uuid(mut self, fleet: String) -> Self {
-        self.fleet_uuid = fleet;
-        self
-    }
-
-    pub fn set_api_url(mut self, api_url: String) -> Self {
-        self.api_url = api_url;
-        self
-    }
-
-    pub fn set_file(mut self, file: PathBuf) -> Self {
-        self.file = file;
-        self
-    }
-
-    pub fn validate(&self) -> Result<&Self, ValidationNotSetError> {
-        if self.created_at == 0 {
-            Err(ValidationNotSetError::CreatedAt)?;
-        } else if self.uuid.is_empty() {
-            Err(ValidationNotSetError::Uuid)?;
-        } else if self.fleet_uuid.is_empty() {
-            Err(ValidationNotSetError::Fleet)?;
-        } else if self.api_url.is_empty() {
-            Err(ValidationNotSetError::ApiUrl)?;
-        } else if self.file == PathBuf::from("") {
-            Err(ValidationNotSetError::File)?;
-        }
-        Ok(self)
-    }
-
-    pub async fn fetch(&self) -> Result<Device> {
-        let response = reqwest::Client::new()
-            .post(self.get_api_url())
-            .json(&self)
-            .send()
-            .await?;
-        let device_config: Device = response.json().await?;
-        Ok(device_config)
-    }
-
-    pub fn load_config(rd_file: &PathBuf) -> Result<Device> {
-        let mut rd_conf: File = File::open(rd_file)
-            .with_context(|| format!("Unable to open rd config file at {:?}", rd_file))?;
-        let mut rd_contents = String::new();
-        rd_conf
-            .read_to_string(&mut rd_contents)
-            .context("Unable to read rd config file")?;
-        let device: Device =
-            serde_yaml::from_str(&rd_contents).context("Unable to deserialize rd YAML")?;
-
-        Ok(device)
     }
 }
 
-impl fmt::Display for Device {
+impl Validatable for DeviceConfig {
+    fn validate(&self) -> Result<&Self, NotSetError> {
+        if self.created_at == 0 {
+            Err(NotSetError::CreatedAt)?;
+        } else if self.uuid.is_empty() {
+            Err(NotSetError::Uuid)?;
+        } else if self.fleet_uuid.is_empty() {
+            Err(NotSetError::Fleet)?;
+        } else if self.api_url.is_empty() {
+            Err(NotSetError::ApiUrl)?;
+        } else if self.file == PathBuf::from("") {
+            Err(NotSetError::File)?;
+        }
+        Ok(self)
+    }
+}
+
+impl Validatable for WireGuardConfig {
+    fn validate(&self) -> Result<&Self, NotSetError> {
+        if self.created_at == 0 {
+            Err(NotSetError::CreatedAt)?;
+        } else if self.interface.private_key.is_empty() {
+            Err(NotSetError::PrivateKey)?;
+        } else if self.interface.address.is_empty() {
+            Err(NotSetError::Address)?;
+        } else if self.peers.is_empty() {
+            Err(NotSetError::Peers)?;
+        } else if self.api_url.is_empty() {
+            Err(NotSetError::ApiUrl)?;
+        } else if self.file == PathBuf::from("") {
+            Err(NotSetError::File)?;
+        } else if self.wg_file == PathBuf::from("") {
+            Err(NotSetError::WireguardFile)?;
+        }
+        Ok(self)
+    }
+}
+
+impl WireGuardConfig {
+    pub fn load_from_wireguard_config(self, path: &PathBuf) -> Result<WireGuardConfig> {
+        let conf = Ini::load_from_file(path)?;
+        let mut interface = InterfaceConfig {
+            private_key: String::new(),
+            address: String::new(),
+            listen_port: None,
+        };
+        let mut peers = Vec::new();
+        for (sec, prop) in conf.iter() {
+            match sec {
+                Some(section) if section.starts_with("Interface") => {
+                    for (key, value) in prop.iter() {
+                        match key {
+                            "PrivateKey" => interface.private_key = value.into(),
+                            "Address" => interface.address = value.into(),
+                            "ListenPort" => interface.listen_port = value.parse().ok(),
+                            // Handle other fields
+                            _ => {}
+                        }
+                    }
+                }
+                Some(section) if section.starts_with("Peer") => {
+                    let mut peer = PeerConfig {
+                        public_key: String::new(),
+                        allowed_ips: Vec::new(),
+                        endpoint: None,
+                    };
+                    for (key, value) in prop.iter() {
+                        match key {
+                            "PublicKey" => peer.public_key = value.into(),
+                            "AllowedIPs" => {
+                                peer.allowed_ips = value.split(',').map(String::from).collect()
+                            }
+                            "Endpoint" => peer.endpoint = Some(value.into()),
+                            // Handle other fields
+                            _ => {}
+                        }
+                    }
+                    peers.push(peer);
+                }
+                _ => {}
+            }
+        }
+        Ok(WireGuardConfig {
+            interface,
+            peers,
+            ..self
+        })
+    }
+
+    pub fn save_to_wireguard_config(config: &WireGuardConfig, path: &PathBuf) -> Result<()> {
+        let mut conf = Ini::new();
+        {
+            let interface_section = conf.section_mut(Some("Interface".to_owned())).unwrap();
+            interface_section.insert(
+                "PrivateKey".to_owned(),
+                config.interface.private_key.clone(),
+            );
+            interface_section.insert("Address".to_owned(), config.interface.address.clone());
+            if let Some(port) = config.interface.listen_port {
+                interface_section.insert("ListenPort".to_owned(), port.to_string());
+            }
+        }
+        for peer in &config.peers {
+            let peer_section = conf.section_mut(Some("Peer".to_owned())).unwrap();
+            peer_section.insert("PublicKey".to_owned(), peer.public_key.clone());
+            peer_section.insert("AllowedIPs".to_owned(), peer.allowed_ips.join(","));
+            if let Some(endpoint) = &peer.endpoint {
+                peer_section.insert("Endpoint".to_owned(), endpoint.clone());
+            }
+        }
+        conf.write_to_file(path).unwrap();
+        Ok(())
+    }
+}
+
+impl fmt::Display for DeviceConfig {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
             f,
@@ -102,175 +217,38 @@ impl fmt::Display for Device {
         )
     }
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Wireguard {
-    pub created_at: u64,
-    pub uuid: String,
-    pub hub_ip: String,
-    pub hub_port: u16,
-    pub device_ip: String,
-    pub api_url: String,
-    pub file: PathBuf,
-}
 
-impl Wireguard {
-    pub fn init() -> Wireguard {
-        Wireguard {
-            created_at: 0,
-            uuid: String::from(""),
-            hub_ip: String::from(""),
-            hub_port: 0,
-            device_ip: String::from(""),
-            api_url: String::from("https://api.roboticsdeployment.com/wireguard"),
-            file: PathBuf::from("/etc/wireguard/rd0.conf"),
+impl fmt::Display for WireGuardConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.interface)?;
+        for peer in &self.peers {
+            writeln!(f)?;
+            write!(f, "{}", peer)?;
         }
-    }
-
-    pub fn get_uuid(&self) -> &str {
-        &self.uuid
-    }
-
-    pub fn get_hub_ip(&self) -> &str {
-        &self.hub_ip
-    }
-
-    pub fn get_hub_port(&self) -> u16 {
-        self.hub_port
-    }
-
-    pub fn get_device_ip(&self) -> &str {
-        &self.device_ip
-    }
-
-    pub fn get_api_url(&self) -> &str {
-        &self.api_url
-    }
-
-    pub fn get_file(&self) -> &PathBuf {
-        &self.file
-    }
-
-    pub fn set_uuid(mut self, uuid: String) -> Self {
-        self.uuid = uuid;
-        self
-    }
-
-    pub fn set_hub_ip(mut self, hub_ip: String) -> Self {
-        self.hub_ip = hub_ip;
-        self
-    }
-
-    pub fn set_hub_port(mut self, hub_port: u16) -> Self {
-        self.hub_port = hub_port;
-        self
-    }
-
-    pub fn set_device_ip(mut self, device_ip: String) -> Self {
-        self.device_ip = device_ip;
-        self
-    }
-
-    pub fn set_api_url(mut self, api_url: String) -> Self {
-        self.api_url = api_url;
-        self
-    }
-
-    pub fn set_file(mut self, file: PathBuf) -> Self {
-        self.file = file;
-        self
-    }
-
-    pub fn load_config(wg_file: &PathBuf) -> Result<Wireguard> {
-        let wg_conf = File::open(wg_file)
-            .with_context(|| format!("Unable to open wireguard config file at {:?}", wg_file))?;
-        let mut reader = BufReader::new(wg_conf);
-
-        let hub_ip = Wireguard::scan(&mut reader, "[Peer]", "AllowedIPs")
-            .context("Failed to scan for hub IP in wireguard config")?;
-        let hub_port = Wireguard::scan(&mut reader, "[Peer]", "Endpoint")
-            .context("Failed to scan for hub port in wireguard config")?;
-        let device_ip = Wireguard::scan(&mut reader, "[Interface]", "Address")
-            .context("Failed to scan for device IP in wireguard config")?;
-
-        let wireguard = Wireguard {
-            created_at: 0,
-            uuid: Wireguard::init().get_uuid().to_string(),
-            hub_ip: hub_ip
-                .split('/')
-                .nth(0)
-                .ok_or_else(|| anyhow::anyhow!("Invalid hub IP format"))?
-                .to_string(),
-            hub_port: hub_port
-                .split(':')
-                .nth(1)
-                .ok_or_else(|| anyhow::anyhow!("Invalid hub port format"))?
-                .parse::<u16>()?,
-            device_ip: device_ip
-                .split('/')
-                .nth(0)
-                .ok_or_else(|| anyhow::anyhow!("Invalid device IP format"))?
-                .to_string(),
-            api_url: Wireguard::init().get_api_url().to_string(),
-            file: wg_file.clone(),
-        };
-
-        Ok(wireguard)
-    }
-
-    pub async fn fetch(wireguard: &Wireguard) -> Result<Wireguard> {
-        let response = reqwest::Client::new()
-            .post(wireguard.get_api_url())
-            .json(&wireguard)
-            .send()
-            .await?;
-        let wireguard: Wireguard = response.json().await?;
-        Ok(wireguard)
-    }
-
-    fn scan(reader: &mut BufReader<File>, device: &str, field: &str) -> Result<String> {
-        let mut inside_peer_section = false;
-        let mut field_value = String::new();
-        for line in reader.lines() {
-            let line = line.unwrap();
-            if line.trim() == device {
-                inside_peer_section = true;
-            } else {
-                match inside_peer_section {
-                    true => {
-                        if line.starts_with(field) {
-                            let parts: Vec<&str> = line.split_whitespace().collect();
-                            if parts.len() > 2 {
-                                let ip_address: &str = parts[2];
-                                if !ip_address.is_empty() {
-                                    field_value = ip_address.to_string();
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    false => (),
-                }
-            }
-        }
-        // Reset the reader to the beginning of the file
-        reader.seek(SeekFrom::Start(0)).unwrap();
-        if field_value.is_empty() {
-            Err(anyhow::anyhow!("Unable to find {} in {}", field, device))
-        } else {
-            Ok(field_value)
-        }
+        Ok(())
     }
 }
 
-impl Display for Wireguard {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(
-            f,
-            "hub_ip: {}, hub_port: {}, device_ip: {}, file: {}",
-            self.hub_ip,
-            self.hub_port,
-            self.device_ip,
-            self.file.display()
-        )
+impl fmt::Display for InterfaceConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "[Interface]")?;
+        writeln!(f, "PrivateKey = {}", self.private_key)?;
+        writeln!(f, "Address = {}", self.address)?;
+        if let Some(port) = self.listen_port {
+            writeln!(f, "ListenPort = {}", port)?;
+        }
+        Ok(())
+    }
+}
+
+impl fmt::Display for PeerConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "[Peer]")?;
+        writeln!(f, "PublicKey = {}", self.public_key)?;
+        writeln!(f, "AllowedIPs = {}", self.allowed_ips.join(", "))?;
+        if let Some(endpoint) = &self.endpoint {
+            writeln!(f, "Endpoint = {}", endpoint)?;
+        }
+        Ok(())
     }
 }
