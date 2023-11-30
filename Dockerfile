@@ -1,5 +1,4 @@
-ARG IMAGE=robotics-deployment:dev
-FROM ${IMAGE}
+FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 

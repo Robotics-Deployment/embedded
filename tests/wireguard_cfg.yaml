@@ -1,0 +1,14 @@
+created_at: 1700000000
+uuid: 017fe537-bb13-7c35-b52a-cb5490cce7be
+interface:
+  private_key: "yMvULgN1FRLS80b9eLF2M9D7Hn5lgaJbZzp1A=="
+  address: "10.0.0.1/24"
+  listen_port: 51820
+peers:
+  - public_key: "gD0GZ5R4f4mPc2fAn3db5BbK5R5sH3Jf9FzCw=="
+    allowed_ips:
+      - "10.0.0.2/32"
+    endpoint: "api.roboticsdeployment.com:51820"
+api_url: https://api.roboticsdeployment.com/wireguard
+file: "/etc/rd/wireguard_cfg.yaml"
+wg_file: "/etc/wireguard/rd0.conf"
