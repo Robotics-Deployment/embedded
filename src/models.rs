@@ -194,20 +194,17 @@ impl WireGuard {
         })
     }
 
-    pub fn save_to_wireguard_file(config: &WireGuard, path: &PathBuf) -> Result<()> {
+    pub fn save_to_wireguard_file(self, path: PathBuf) -> Result<WireGuard> {
         let mut conf = Ini::new();
         {
             let interface_section = conf.section_mut(Some("Interface".to_owned())).unwrap();
-            interface_section.insert(
-                "PrivateKey".to_owned(),
-                config.interface.private_key.clone(),
-            );
-            interface_section.insert("Address".to_owned(), config.interface.address.clone());
-            if let Some(port) = config.interface.listen_port {
+            interface_section.insert("PrivateKey".to_owned(), self.interface.private_key.clone());
+            interface_section.insert("Address".to_owned(), self.interface.address.clone());
+            if let Some(port) = self.interface.listen_port {
                 interface_section.insert("ListenPort".to_owned(), port.to_string());
             }
         }
-        for peer in &config.peers {
+        for peer in &self.peers {
             let peer_section = conf.section_mut(Some("Peer".to_owned())).unwrap();
             peer_section.insert("PublicKey".to_owned(), peer.public_key.clone());
             peer_section.insert("AllowedIPs".to_owned(), peer.allowed_ips.join(","));
@@ -216,32 +213,32 @@ impl WireGuard {
             }
         }
         conf.write_to_file(path).unwrap();
-        Ok(())
+        Ok(self)
     }
 }
-//TODO: Add sensible instantiation
+
 impl WireGuard {
-    pub fn new() -> WireGuard {
+    pub fn new(created_at: u64, device_uuid: String) -> WireGuard {
         WireGuard {
-            created_at: 0,
+            created_at,
+            device_uuid,
             uuid: String::new(),
-            device_uuid: String::new(),
             interface: Interface {
                 private_key: String::new(),
                 address: String::new(),
                 listen_port: None,
             },
             peers: Vec::new(),
-            api_url: String::new(),
-            file: PathBuf::from(""),
-            wireguard_file: PathBuf::from(""),
+            api_url: "https://api.roboticsdeployment.com/wireguard".into(),
+            file: "/etc/rd/wireguard.yaml".into(),
+            wireguard_file: "/etc/wireguard/rd0.conf".into(),
         }
     }
 }
 
 impl Default for WireGuard {
     fn default() -> Self {
-        Self::new()
+        Self::new(0, String::new())
     }
 }
 
