@@ -3,9 +3,9 @@ use rdembedded::errors;
 use rdembedded::models;
 use std::path::PathBuf;
 
-static EMPTY_CFG_FILE: &str = "tests/empty_cfg.yaml";
-static BARE_CFG_FILE: &str = "tests/bare_cfg.yaml";
-static CFG_FILE: &str = "tests/cfg.yaml";
+static EMPTY_CFG_FILE: &str = "tests/device_empty_cfg.yaml";
+static BARE_CFG_FILE: &str = "tests/device_bare_cfg.yaml";
+static CFG_FILE: &str = "tests/device_cfg.yaml";
 
 #[cfg(test)]
 mod device_tests {
@@ -61,8 +61,8 @@ mod device_tests {
     }
 }
 
-static EMPTY_WIREGUARD_CFG_FILE: &str = "tests/empty_wireguard_cfg.yaml";
-static BARE_WIREGUARD_CFG_FILE: &str = "tests/bare_wireguard_cfg.yaml";
+static EMPTY_WIREGUARD_CFG_FILE: &str = "tests/wireguard_empty_cfg.yaml";
+static BARE_WIREGUARD_CFG_FILE: &str = "tests/wireguard_bare_cfg.yaml";
 static WIREGUARD_CFG_FILE: &str = "tests/wireguard_cfg.yaml";
 
 #[cfg(test)]
@@ -94,7 +94,7 @@ mod wireguard_tests {
         let result = conf.validate();
         match result {
             Err(e) => match e {
-                errors::NotSetError::Fleet => {}
+                errors::NotSetError::PrivateKey => {}
                 _ => {
                     panic!("Expected Fleet error, got a different error: {}", e);
                 }
@@ -113,5 +113,14 @@ mod wireguard_tests {
         if let Err(e) = result {
             panic!("Config should be valid but was invalid: {}", e);
         }
+    }
+}
+
+#[cfg(test)]
+mod main_test {
+    use super::*;
+    #[test]
+    fn test_main() {
+        println!("Running main test");
     }
 }

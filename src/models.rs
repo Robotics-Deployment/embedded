@@ -193,36 +193,14 @@ impl WireGuard {
             ..self
         })
     }
-
-    pub fn save_to_wireguard_file(self, path: PathBuf) -> Result<WireGuard> {
-        let mut conf = Ini::new();
-        {
-            let interface_section = conf.section_mut(Some("Interface".to_owned())).unwrap();
-            interface_section.insert("PrivateKey".to_owned(), self.interface.private_key.clone());
-            interface_section.insert("Address".to_owned(), self.interface.address.clone());
-            if let Some(port) = self.interface.listen_port {
-                interface_section.insert("ListenPort".to_owned(), port.to_string());
-            }
-        }
-        for peer in &self.peers {
-            let peer_section = conf.section_mut(Some("Peer".to_owned())).unwrap();
-            peer_section.insert("PublicKey".to_owned(), peer.public_key.clone());
-            peer_section.insert("AllowedIPs".to_owned(), peer.allowed_ips.join(","));
-            if let Some(endpoint) = &peer.endpoint {
-                peer_section.insert("Endpoint".to_owned(), endpoint.clone());
-            }
-        }
-        conf.write_to_file(path).unwrap();
-        Ok(self)
-    }
 }
 
 impl WireGuard {
-    pub fn new(created_at: u64, device_uuid: String) -> WireGuard {
+    pub fn new(created_at: u64, wireguard_uuid: String, device_uuid: String) -> WireGuard {
         WireGuard {
             created_at,
             device_uuid,
-            uuid: String::new(),
+            uuid: wireguard_uuid,
             interface: Interface {
                 private_key: String::new(),
                 address: String::new(),
@@ -238,7 +216,7 @@ impl WireGuard {
 
 impl Default for WireGuard {
     fn default() -> Self {
-        Self::new(0, String::new())
+        Self::new(0, String::new(), String::new())
     }
 }
 

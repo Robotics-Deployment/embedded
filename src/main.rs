@@ -2,15 +2,12 @@ use env_logger::Builder;
 use log::{error, info, LevelFilter};
 use nix::unistd::getuid;
 use std::net::ToSocketAddrs;
-use std::path::PathBuf;
 use std::process::{exit, Command};
-use std::str::FromStr;
-use tokio::net::{unix::SocketAddr, UdpSocket};
+use tokio::net::UdpSocket;
 use tokio::time::{interval, Duration};
 
-use crate::models::{Configurable, Validatable};
-
 mod errors;
+mod functions;
 mod models;
 
 #[tokio::main]
@@ -18,8 +15,8 @@ async fn main() -> anyhow::Result<()> {
     Builder::new().filter_level(LevelFilter::Info).init();
     info!("Starting Rdembedded");
 
-    let mut device: models::DeviceConfig;
-    let mut wireguard: models::WireGuard;
+    let device: models::DeviceConfig;
+    let wireguard: models::WireGuard;
 
     // Memory Scope
     {
@@ -30,97 +27,30 @@ async fn main() -> anyhow::Result<()> {
         }
 
         // Device
-        let r = models::DeviceConfig::load_config(&PathBuf::from("/etc/rd/device.yaml"));
-
-        device = match r {
+        device = match functions::initialize_device_config().await {
+            Ok(cfg) => cfg,
             Err(e) => {
-                error!("Unable to read configuration file: {}", e);
+                error!("Critical error: {}", e);
                 exit(1);
-            }
-            Ok(cfg) => {
-                info!("Using device config file: {:?}", cfg.file);
-                cfg
-            }
-        };
-
-        let r = device.validate();
-
-        device = match r {
-            Err(e) => match e {
-                errors::NotSetError::Fleet => {
-                    error!("Fleet not set in configuration file. Device does not know which fleet it belongs to. cannot continue...");
-                    exit(1);
-                }
-                errors::NotSetError::Uuid => {
-                    info!("Device UUID not set in configuration file, fetching...");
-                    let result_fetch = device.fetch().await;
-                    match result_fetch {
-                        Err(error) => {
-                            error!("Unable to fetch configuration: {}", error);
-                            exit(1);
-                        }
-                        Ok(dev) => {
-                            info!("Successfully fetched configuration");
-                            dev
-                        }
-                    }
-                }
-                _ => {
-                    error!("Unhandled error validating configuration file: {}", e);
-                    exit(1);
-                }
-            },
-            Ok(dev) => {
-                info!("device config validated: {:?}", device);
-                dev.clone()
             }
         };
 
         // Wireguard
-        let r = models::WireGuard::load_config(&PathBuf::from("/etc/rd/wireguard.yaml"));
-        wireguard = match r {
+        wireguard = match functions::initialize_wireguard_config(&device).await {
+            Ok(cfg) => cfg,
             Err(e) => {
-                error!("Unable to read configuration file: {}", e);
-                wireguard = models::WireGuard::new(device.created_at, device.uuid.clone());
-
-                match wireguard.fetch().await {
-                    Err(error) => {
-                        error!("Unable to fetch configuration: {}", error);
-                        exit(1);
-                    }
-                    Ok(wg) => {
-                        info!("Successfully fetched configuration");
-                        match wg.save_config() {
-                            Ok(_) => {
-                                info!("Successfully saved configuration");
-                            }
-                            Err(e) => {
-                                error!("Unable to save configuration: {}", e);
-                                exit(1);
-                            }
-                        }
-                        wg
-                    }
-                }
-            }
-            Ok(cfg) => {
-                info!("Using wireguard config file: {:?}", cfg.file);
-                cfg
-            }
-        };
-
-        wireguard = match wireguard
-            .save_to_wireguard_file(PathBuf::from_str("/etc/wireguard/rd0.conf").unwrap())
-        {
-            Err(e) => {
-                error!("Unable to save wireguard configuration: {}", e);
+                error!("Critical error: {}", e);
                 exit(1);
             }
-            Ok(wg) => {
-                info!("Successfully saved wireguard configuration");
-                wg
-            }
         };
+
+        info!("Using wireguard config file: {:?}", wireguard.file);
+        if let Err(e) = functions::save_to_wireguard_file(&wireguard) {
+            error!("Unable to save wireguard configuration: {}", e);
+            exit(1);
+        }
+
+        info!("Successfully saved wireguard configuration");
 
         let output = Command::new("wg-quick").args(["up", "rd0"]).output()?;
         if !output.status.success() {
@@ -128,8 +58,9 @@ async fn main() -> anyhow::Result<()> {
                 "Failed to bring up WireGuard interface: {}",
                 String::from_utf8_lossy(&output.stderr)
             );
-            std::process::exit(1);
+            exit(1);
         }
+
         println!("WireGuard interface is up.");
     }
 

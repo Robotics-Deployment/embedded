@@ -1,0 +1,15 @@
+created_at: 1700000000
+uuid: 017fe537-bb13-7c35-b52a-cb5490cce7be
+device_uuid:
+interface:
+  private_key:
+  address:
+  listen_port:
+peers:
+  - public_key:
+    allowed_ips:
+      - 
+    endpoint:
+api_url:
+file: "/etc/rd/wireguard_cfg.yaml"
+wireguard_file: "/etc/wireguard/rd0.conf"

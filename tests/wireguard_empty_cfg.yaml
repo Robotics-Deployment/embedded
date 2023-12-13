@@ -1,5 +1,15 @@
 created_at: 0
 uuid:
-fleet_uuid:
+device_uuid:
+interface:
+  private_key:
+  address:
+  listen_port:
+peers:
+  - public_key:
+    allowed_ips:
+      - 
+    endpoint:
 api_url:
 file:
+wireguard_file:

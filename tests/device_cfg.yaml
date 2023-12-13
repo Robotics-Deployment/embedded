@@ -3,3 +3,4 @@ uuid: 017fe537-bb13-7c35-b52a-cb5490cce7be
 fleet_uuid: 0189f7ea-ae2c-7809-8aeb-b819cf5e9e7f
 api_url: https://api.roboticsdeployment.com/device
 file: /etc/rd/cfg.yaml
+wireguard_uuid: 00006553-f100-73e8-9a0a-bc61c4277278
