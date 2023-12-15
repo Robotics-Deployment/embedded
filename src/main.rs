@@ -64,17 +64,6 @@ async fn main() -> anyhow::Result<()> {
         println!("WireGuard interface is up.");
     }
 
-    let source_address = match wireguard.interface.address.to_socket_addrs() {
-        Ok(mut addrs) => addrs.next().ok_or_else(|| {
-            error!("Failed to parse interface address");
-            exit(1);
-        }),
-        Err(e) => {
-            error!("Failed to resolve address: {}", e);
-            exit(1);
-        }
-    };
-
     let destination_address = match wireguard.peers.get(0) {
         Some(peer) => match &peer.endpoint {
             Some(endpoint) => match endpoint.to_socket_addrs() {
@@ -97,14 +86,16 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    let socket = match UdpSocket::bind(format!("[{}]:{}", source_address.unwrap(), 42069)).await {
+    let socket = match UdpSocket::bind("0.0.0.0:0").await {
         Ok(s) => s,
         Err(e) => {
             error!("Failed to bind socket: {}", e);
             exit(1);
         }
     };
+
     let mut interval = interval(Duration::from_secs(1));
+    info!("Sending packets to {}", destination_address);
 
     loop {
         socket

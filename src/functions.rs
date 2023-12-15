@@ -1,4 +1,5 @@
 use ini::Ini;
+use ini::{Properties, SectionEntry};
 use log::{error, info};
 use std::path::PathBuf;
 
@@ -94,14 +95,28 @@ pub fn save_to_wireguard_file(wireguard: &WireGuard) -> Result<(), String> {
     }
 
     // Peer sections
-    for (index, peer) in wireguard.peers.iter().enumerate() {
-        let section_name = format!("Peer_{}", index); // Unique section name for each peer
-        conf.with_section(Some(&section_name))
-            .set("PublicKey", &peer.public_key)
-            .set("AllowedIPs", &peer.allowed_ips.join(","));
-        if let Some(endpoint) = &peer.endpoint {
-            conf.with_section(Some(&section_name))
-                .set("Endpoint", endpoint);
+    for (_, peer) in wireguard.peers.iter().enumerate() {
+        let section_name = "Peer".to_string();
+        match conf.entry(Some(section_name)) {
+            SectionEntry::Vacant(vac) => {
+                let mut entry = Properties::new();
+                entry.insert("PublicKey", &peer.public_key);
+                entry.insert("AllowedIPs", &peer.allowed_ips.join(","));
+                if let Some(endpoint) = &peer.endpoint {
+                    entry.insert("Endpoint", endpoint);
+                }
+                vac.insert(entry);
+            }
+
+            SectionEntry::Occupied(mut occ) => {
+                let mut entry = Properties::new();
+                entry.insert("PublicKey", &peer.public_key);
+                entry.insert("AllowedIPs", &peer.allowed_ips.join(","));
+                if let Some(endpoint) = &peer.endpoint {
+                    entry.insert("Endpoint", endpoint);
+                }
+                occ.append(entry);
+            }
         }
     }
 
