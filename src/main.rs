@@ -64,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
         println!("WireGuard interface is up.");
     }
 
-    let destination_address = match wireguard.peers.get(0) {
+    let mut destination_address = match wireguard.peers.get(0) {
         Some(peer) => match &peer.endpoint {
             Some(endpoint) => match endpoint.to_socket_addrs() {
                 Ok(mut addrs) => addrs.next().ok_or_else(|| {
@@ -93,6 +93,8 @@ async fn main() -> anyhow::Result<()> {
             exit(1);
         }
     };
+
+    destination_address = std::net::SocketAddr::new(destination_address.ip(), 42069);
 
     let mut interval = interval(Duration::from_secs(1));
     info!("Sending packets to {}", destination_address);
