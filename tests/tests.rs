@@ -118,7 +118,6 @@ mod wireguard_tests {
 
 #[cfg(test)]
 mod main_test {
-    use super::*;
     #[test]
     fn test_main() {
         println!("Running main test");

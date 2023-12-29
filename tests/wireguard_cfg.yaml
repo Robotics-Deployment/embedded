@@ -11,5 +11,5 @@ peers:
       - "10.0.0.2/32"
     endpoint: "api.roboticsdeployment.com:51820"
 api_url: https://api.roboticsdeployment.com/wireguard
-file: "/etc/rd/wireguard_cfg.yaml"
+file: "/etc/rd/wireguard.yaml"
 wireguard_file: "/etc/wireguard/rd0.conf"

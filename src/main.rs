@@ -14,6 +14,7 @@ mod models;
 async fn main() -> anyhow::Result<()> {
     Builder::new().filter_level(LevelFilter::Info).init();
     info!("Starting Rdembedded");
+    info!("Required files should be present at /etc/rd/");
 
     let device: models::DeviceConfig;
     let wireguard: models::WireGuard;

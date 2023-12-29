@@ -11,5 +11,5 @@ peers:
       - 
     endpoint:
 api_url:
-file: "/etc/rd/wireguard_cfg.yaml"
+file: "/etc/rd/wireguard.yaml"
 wireguard_file: "/etc/wireguard/rd0.conf"
