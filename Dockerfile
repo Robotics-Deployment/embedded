@@ -38,7 +38,9 @@ RUN rustup target add x86_64-unknown-linux-gnu \
 COPY . /opt/rdembedded
 WORKDIR /opt/rdembedded
 
-RUN mkdir -p /etc/rd && \
+RUN cargo build --release
+RUN cp /opt/rdembedded/target/release/rdembedded /usr/bin/rdembedded && \
+  mkdir -p /etc/rd && \
   cp -R /opt/rdembedded/tests/device_cfg.yaml /etc/rd/device.yaml && \
   cp -R /opt/rdembedded/tests/wireguard_cfg.yaml /etc/rd/wireguard.yaml
 
