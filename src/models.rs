@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use crate::errors::NotSetError;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct DeviceConfig {
+pub struct Device {
     pub created_at: u64,
     pub uuid: String,
     pub fleet_uuid: String,
@@ -87,7 +87,7 @@ pub trait Validatable {
     fn validate(&self) -> Result<&Self, NotSetError>;
 }
 
-impl Configurable for DeviceConfig {
+impl Configurable for Device {
     fn get_api_url(&self) -> &str {
         &self.api_url
     }
@@ -105,7 +105,7 @@ impl Configurable for WireGuard {
     }
 }
 
-impl Validatable for DeviceConfig {
+impl Validatable for Device {
     fn validate(&self) -> Result<&Self, NotSetError> {
         if self.created_at == 0 {
             Err(NotSetError::CreatedAt)?;
@@ -220,7 +220,7 @@ impl Default for WireGuard {
     }
 }
 
-impl fmt::Display for DeviceConfig {
+impl fmt::Display for Device {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
             f,

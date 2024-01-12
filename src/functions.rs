@@ -6,10 +6,10 @@ use std::path::PathBuf;
 use crate::errors;
 use crate::models::{self, Configurable, Validatable, WireGuard};
 
-pub async fn initialize_device_config() -> Result<models::DeviceConfig, String> {
+pub async fn initialize_device_config() -> Result<models::Device, String> {
     // Load the device configuration from a file
     let config_path = PathBuf::from("/etc/rd/device.yaml");
-    let device = match models::DeviceConfig::load_config(&config_path) {
+    let device = match models::Device::load_config(&config_path) {
         Ok(cfg) => {
             info!("Using device config file: {:?}", cfg.file);
             cfg
@@ -46,7 +46,7 @@ pub async fn initialize_device_config() -> Result<models::DeviceConfig, String> 
 }
 
 pub async fn initialize_wireguard_config(
-    device: &models::DeviceConfig,
+    device: &models::Device,
 ) -> Result<models::WireGuard, String> {
     let config_path = PathBuf::from("/etc/rd/wireguard.yaml");
     match models::WireGuard::load_config(&config_path) {
@@ -95,7 +95,7 @@ pub fn save_to_wireguard_file(wireguard: &WireGuard) -> Result<(), String> {
     }
 
     // Peer sections
-    for (_, peer) in wireguard.peers.iter().enumerate() {
+    for peer in wireguard.peers.iter() {
         let section_name = "Peer".to_string();
         match conf.entry(Some(section_name)) {
             SectionEntry::Vacant(vac) => {

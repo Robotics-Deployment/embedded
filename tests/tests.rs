@@ -13,7 +13,7 @@ mod device_tests {
 
     #[test]
     fn test_empty_config() {
-        let conf = models::DeviceConfig::load_config(&PathBuf::from(EMPTY_CFG_FILE))
+        let conf = models::Device::load_config(&PathBuf::from(EMPTY_CFG_FILE))
             .expect("Unable to read config file");
 
         let result = conf.validate();
@@ -32,7 +32,7 @@ mod device_tests {
 
     #[test]
     fn test_bare_config() {
-        let conf = models::DeviceConfig::load_config(&PathBuf::from(BARE_CFG_FILE))
+        let conf = models::Device::load_config(&PathBuf::from(BARE_CFG_FILE))
             .expect("Unable to read config file");
         let result = conf.validate();
 
@@ -51,7 +51,7 @@ mod device_tests {
 
     #[test]
     fn test_config() {
-        let conf = models::DeviceConfig::load_config(&PathBuf::from(CFG_FILE))
+        let conf = models::Device::load_config(&PathBuf::from(CFG_FILE))
             .expect("Unable to read config file");
         let result = conf.validate();
 

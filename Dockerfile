@@ -1,6 +1,7 @@
 FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG CARGO_REGISTRIES_RD_TOKEN
 
 LABEL maintainer="Deniz Hofmeister"
 LABEL description="Robotics Deployment Embedded Module"
@@ -11,6 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   gnupg \
   software-properties-common \
   curl \
+  git \
+  openssh-client \
   pkg-config \
   libssl-dev \
   build-essential \
@@ -38,7 +41,10 @@ RUN rustup target add x86_64-unknown-linux-gnu \
 COPY . /opt/rdembedded
 WORKDIR /opt/rdembedded
 
-RUN cargo build --release
+RUN --mount=type=ssh mkdir -p -m 0700 ~/.ssh && ssh-keyscan ssh.shipyard.rs >> ~/.ssh/known_hosts
+RUN --mount=type=ssh cargo login --registry rd $CARGO_REGISTRIES_RD_TOKEN
+RUN --mount=type=ssh cargo build --release
+
 RUN cp /opt/rdembedded/target/release/rdembedded /usr/bin/rdembedded && \
   mkdir -p /etc/rd && \
   cp -R /opt/rdembedded/tests/device_cfg.yaml /etc/rd/device.yaml && \

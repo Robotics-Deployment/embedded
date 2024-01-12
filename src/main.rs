@@ -16,7 +16,7 @@ async fn main() -> anyhow::Result<()> {
     info!("Starting Rdembedded");
     info!("Required files should be present at /etc/rd/");
 
-    let device: models::DeviceConfig;
+    let device: models::Device;
     let wireguard: models::WireGuard;
 
     // Memory Scope
@@ -65,7 +65,7 @@ async fn main() -> anyhow::Result<()> {
         println!("WireGuard interface is up.");
     }
 
-    let mut destination_address = match wireguard.peers.get(0) {
+    let mut destination_address = match wireguard.peers.first() {
         Some(peer) => match &peer.endpoint {
             Some(endpoint) => match endpoint.to_socket_addrs() {
                 Ok(mut addrs) => addrs.next().ok_or_else(|| {

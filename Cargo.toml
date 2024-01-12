@@ -8,6 +8,7 @@ repository = "https://github.com/Robotics-Deployment/embedded.git"
 license = "Apache-2.0"
 
 [dependencies]
+rdmodels = { version = "0.1", registry = "rd" }
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
 tokio = {version = "1" , features = ["full"]}
