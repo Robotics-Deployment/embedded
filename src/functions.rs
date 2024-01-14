@@ -1,15 +1,16 @@
 use ini::Ini;
 use ini::{Properties, SectionEntry};
 use log::{error, info};
+use rdmodels::errors::NotSetError;
+use rdmodels::traits::{Fetchable, Storeable, Validatable};
+use rdmodels::types::device::Device;
+use rdmodels::types::wireguard::WireGuard;
 use std::path::PathBuf;
 
-use crate::errors;
-use crate::models::{self, Configurable, Validatable, WireGuard};
-
-pub async fn initialize_device_config() -> Result<models::Device, String> {
+pub async fn initialize_device_config() -> Result<Device, String> {
     // Load the device configuration from a file
     let config_path = PathBuf::from("/etc/rd/device.yaml");
-    let device = match models::Device::load_config(&config_path) {
+    let device = match Device::load(&config_path) {
         Ok(cfg) => {
             info!("Using device config file: {:?}", cfg.file);
             cfg
@@ -24,11 +25,11 @@ pub async fn initialize_device_config() -> Result<models::Device, String> {
             info!("Device config validated: {:?}", device);
             Ok(device)
         }
-        Err(errors::NotSetError::Fleet) => {
+        Err(NotSetError::Fleet) => {
             let msg = "Fleet not set in configuration file. Device does not know which fleet it belongs to. Cannot continue...";
             Err(msg.to_string())
         }
-        Err(errors::NotSetError::Uuid) => {
+        Err(NotSetError::Uuid) => {
             info!("Device UUID not set in configuration file, fetching...");
             match device.fetch().await {
                 Ok(fetched_device) => {
@@ -45,18 +46,16 @@ pub async fn initialize_device_config() -> Result<models::Device, String> {
     }
 }
 
-pub async fn initialize_wireguard_config(
-    device: &models::Device,
-) -> Result<models::WireGuard, String> {
+pub async fn initialize_wireguard_config(device: &Device) -> Result<WireGuard, String> {
     let config_path = PathBuf::from("/etc/rd/wireguard.yaml");
-    match models::WireGuard::load_config(&config_path) {
+    match WireGuard::load(&config_path) {
         Ok(cfg) => {
             info!("WireGuard config loaded successfully.");
             Ok(cfg)
         }
         Err(e) => {
             error!("Unable to read WireGuard configuration file: {}", e);
-            let wireguard = models::WireGuard::new(
+            let wireguard = WireGuard::new(
                 device.created_at,
                 device.wireguard_uuid.clone(),
                 device.uuid.clone(),
@@ -65,7 +64,7 @@ pub async fn initialize_wireguard_config(
             match wireguard.fetch().await {
                 Ok(wg) => {
                     info!("Successfully fetched new WireGuard configuration.");
-                    match wg.save_config() {
+                    match wg.save() {
                         Ok(_) => {
                             info!("Successfully saved new WireGuard configuration.");
                             Ok(wg)

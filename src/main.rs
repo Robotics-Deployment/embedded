@@ -1,3 +1,5 @@
+use rdmodels::types::device::Device;
+
 use env_logger::Builder;
 use log::{error, info, LevelFilter};
 use nix::unistd::getuid;
@@ -8,7 +10,6 @@ use tokio::time::{interval, Duration};
 
 mod errors;
 mod functions;
-mod models;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
