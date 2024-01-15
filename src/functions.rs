@@ -4,6 +4,7 @@ use log::{error, info};
 use rdmodels::errors::NotSetError;
 use rdmodels::traits::{Fetchable, Storeable, Validatable};
 use rdmodels::types::device::Device;
+use rdmodels::types::interface::Interface;
 use rdmodels::types::wireguard::WireGuard;
 use std::path::PathBuf;
 
@@ -55,11 +56,21 @@ pub async fn initialize_wireguard_config(device: &Device) -> Result<WireGuard, S
         }
         Err(e) => {
             error!("Unable to read WireGuard configuration file: {}", e);
-            let wireguard = WireGuard::new(
-                device.created_at,
-                device.wireguard_uuid.clone(),
-                device.uuid.clone(),
-            );
+            let wireguard = WireGuard {
+                created_at: device.created_at,
+                device_uuid: device.uuid.clone(),
+                uuid: device.wireguard_uuid.clone(),
+                interface: Interface {
+                    private_key: String::new(),
+                    address: String::new(),
+                    listen_port: None,
+                },
+                peers: Vec::new(),
+                api_url: "https://api.roboticsdeployment.com/wireguard".into(),
+                file: "/etc/rd/wireguard.yaml".into(),
+                wireguard_file: "/etc/wireguard/rd0.conf".into(),
+            };
+
             info!("Fetching new WireGuard configuration...");
             match wireguard.fetch().await {
                 Ok(wg) => {

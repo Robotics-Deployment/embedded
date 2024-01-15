@@ -1,6 +1,7 @@
-use ::rdembedded::models::{Configurable, Validatable};
-use rdembedded::errors;
-use rdembedded::models;
+use ::rdmodels::traits::{Fetchable, Storeable, Validatable};
+use rdmodels::errors::NotSetError;
+use rdmodels::types::device::Device;
+use rdmodels::types::wireguard::WireGuard;
 use std::path::PathBuf;
 
 static EMPTY_CFG_FILE: &str = "tests/device_empty_cfg.yaml";
@@ -13,13 +14,13 @@ mod device_tests {
 
     #[test]
     fn test_empty_config() {
-        let conf = models::Device::load_config(&PathBuf::from(EMPTY_CFG_FILE))
-            .expect("Unable to read config file");
+        let conf =
+            Device::load(&PathBuf::from(EMPTY_CFG_FILE)).expect("Unable to read config file");
 
         let result = conf.validate();
         match result {
             Err(e) => match e {
-                errors::NotSetError::CreatedAt => {}
+                NotSetError::CreatedAt => {}
                 _ => {
                     panic!("Expected Uuid error, got a different error: {}", e);
                 }
@@ -32,13 +33,12 @@ mod device_tests {
 
     #[test]
     fn test_bare_config() {
-        let conf = models::Device::load_config(&PathBuf::from(BARE_CFG_FILE))
-            .expect("Unable to read config file");
+        let conf = Device::load(&PathBuf::from(BARE_CFG_FILE)).expect("Unable to read config file");
         let result = conf.validate();
 
         match result {
             Err(e) => match e {
-                errors::NotSetError::Fleet => {}
+                NotSetError::Fleet => {}
                 _ => {
                     panic!("Expected Fleet error, got a different error: {}", e);
                 }
@@ -51,8 +51,7 @@ mod device_tests {
 
     #[test]
     fn test_config() {
-        let conf = models::Device::load_config(&PathBuf::from(CFG_FILE))
-            .expect("Unable to read config file");
+        let conf = Device::load(&PathBuf::from(CFG_FILE)).expect("Unable to read config file");
         let result = conf.validate();
 
         if let Err(e) = result {
@@ -71,12 +70,12 @@ mod wireguard_tests {
 
     #[test]
     fn test_empty_config() {
-        let conf = models::WireGuard::load_config(&PathBuf::from(EMPTY_WIREGUARD_CFG_FILE))
+        let conf = WireGuard::load(&PathBuf::from(EMPTY_WIREGUARD_CFG_FILE))
             .expect("Unable to read config file");
         let result = conf.validate();
         match result {
             Err(e) => match e {
-                errors::NotSetError::CreatedAt => {}
+                NotSetError::CreatedAt => {}
                 _ => {
                     panic!("Expected Uuid error, got a different error: {}", e);
                 }
@@ -89,12 +88,12 @@ mod wireguard_tests {
 
     #[test]
     fn test_bare_config() {
-        let conf = models::WireGuard::load_config(&PathBuf::from(BARE_WIREGUARD_CFG_FILE))
+        let conf = WireGuard::load(&PathBuf::from(BARE_WIREGUARD_CFG_FILE))
             .expect("Unable to read config file");
         let result = conf.validate();
         match result {
             Err(e) => match e {
-                errors::NotSetError::PrivateKey => {}
+                NotSetError::PrivateKey => {}
                 _ => {
                     panic!("Expected Fleet error, got a different error: {}", e);
                 }
@@ -107,7 +106,7 @@ mod wireguard_tests {
 
     #[test]
     fn test_config() {
-        let conf = models::WireGuard::load_config(&PathBuf::from(WIREGUARD_CFG_FILE))
+        let conf = WireGuard::load(&PathBuf::from(WIREGUARD_CFG_FILE))
             .expect("Unable to read config file");
         let result = conf.validate();
         if let Err(e) = result {

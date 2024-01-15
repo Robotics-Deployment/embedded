@@ -1,4 +1,5 @@
 use rdmodels::types::device::Device;
+use rdmodels::types::wireguard::WireGuard;
 
 use env_logger::Builder;
 use log::{error, info, LevelFilter};
@@ -8,7 +9,6 @@ use std::process::{exit, Command};
 use tokio::net::UdpSocket;
 use tokio::time::{interval, Duration};
 
-mod errors;
 mod functions;
 
 #[tokio::main]
@@ -17,8 +17,8 @@ async fn main() -> anyhow::Result<()> {
     info!("Starting Rdembedded");
     info!("Required files should be present at /etc/rd/");
 
-    let device: models::Device;
-    let wireguard: models::WireGuard;
+    let device: Device;
+    let wireguard: WireGuard;
 
     // Memory Scope
     {
