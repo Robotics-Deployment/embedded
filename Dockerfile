@@ -17,9 +17,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   pkg-config \
   libssl-dev \
   build-essential \
-  gcc-aarch64-linux-gnu \
-  g++-aarch64-linux-gnu \
-  libc6-dev-arm64-cross \
   && apt-get autoremove -y \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
@@ -33,10 +30,6 @@ ENV PATH="/opt/cargo/bin:${PATH}"
 
 RUN chmod -R 777 /opt/rustup \
   && chmod -R 777 /opt/cargo
-
-# Add new Rust targets for cross-compilation
-RUN rustup target add x86_64-unknown-linux-gnu \
-  && rustup target add aarch64-unknown-linux-gnu
 
 COPY . /opt/rdembedded
 WORKDIR /opt/rdembedded
