@@ -2,7 +2,6 @@
 
 ![embedded](rdembedded.png)
 
-[![Build](https://github.com/Robotics-Deployment/embedded/actions/workflows/build.yml/badge.svg)](https://github.com/Robotics-Deployment/embedded/actions/workflows/build.yml)
 
 ### Build
 
