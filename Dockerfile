@@ -34,9 +34,13 @@ RUN chmod -R 777 /opt/rustup \
 COPY . /opt/rdembedded
 WORKDIR /opt/rdembedded
 
-RUN --mount=type=ssh mkdir -p -m 0700 ~/.ssh && ssh-keyscan ssh.shipyard.rs >> ~/.ssh/known_hosts
-RUN --mount=type=ssh cargo login --registry rd $CARGO_REGISTRIES_RD_TOKEN
-RUN --mount=type=ssh cargo build --release
+RUN --mount=type=ssh mkdir -p -m 0700 ~/.ssh && ssh-keyscan ssh.shipyard.rs >> ~/.ssh/known_hosts && \
+  cargo login --registry rd $CARGO_REGISTRIES_RD_TOKEN && \
+  cargo build --release && \
+  rm -rf /opt/cargo/registry && \
+  rm -rf /opt/cargo/credentials.toml && \
+  rm -rf /opt/cargo/config.toml && \
+  rm -rf ~/.ssh
 
 RUN cp /opt/rdembedded/target/release/rdembedded /usr/bin/rdembedded && \
   mkdir -p /etc/rd && \
